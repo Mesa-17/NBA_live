@@ -319,6 +319,10 @@ async def background_nba_data():
                             pts_match = re.search(r"\((\d+)\s*PTS?\)", desc, re.IGNORECASE)
                             if pts_match and full_player_name:
                                 total_points = int(pts_match.group(1))
+                                # Get current game score
+                                score_home = action.get("scoreHome", "0")
+                                score_away = action.get("scoreAway", "0")
+                                
                                 await sio.emit('new_score', {
                                     'game_id': game_id,
                                     'description': desc,
@@ -327,7 +331,11 @@ async def background_nba_data():
                                     'action_id': action_number,
                                     'total_points': total_points,
                                     'player_name': full_player_name,
-                                    'abbr_name': abbr_player_name
+                                    'abbr_name': abbr_player_name,
+                                    'score_home': score_home,
+                                    'score_away': score_away,
+                                    'home_team': game['home_team'],
+                                    'away_team': game['away_team']
                                 })
                                 print(f"🏀 NEW SCORE: {full_player_name} now has {total_points} PTS - {desc}")
 
