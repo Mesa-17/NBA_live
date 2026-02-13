@@ -769,4 +769,54 @@ const styles = StyleSheet.create({
   viewButtonTextLight: {
     color: '#fff',
   },
+  dateFilterContainer: {
+    marginTop: 16,
+  },
+  dateFilterContent: {
+    paddingHorizontal: 16,
+    gap: 10,
+    flexDirection: 'row',
+  },
+  dateFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 10,
+    gap: 8,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dateFilterButtonActive: {
+    shadowOpacity: 0.25,
+  },
+  dateFilterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  dateFilterTextActive: {
+    color: '#fff',
+  },
+  dateFilterBadge: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  dateFilterBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  dateFilterBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6b7280',
+  },
+  dateFilterBadgeTextActive: {
+    color: '#fff',
+  },
 });
