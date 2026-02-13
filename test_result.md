@@ -236,9 +236,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Games List Endpoint with 20 days"
-    - "Notification format with player score"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -250,3 +248,5 @@ agent_communication:
     message: "All backend API endpoints tested and working correctly. NBA API integration functional."
   - agent: "main"
     message: "Implemented 4 new features: 1) Backend /api/games now returns games for next 20 days, 2) Notifications now include player's total score, 3) Removed info card from home screen, 4) Added push notification config for background notifications. Ready for backend testing."
+  - agent: "testing"
+    message: "✅ Backend testing complete - All APIs working: Health (✅), Games 20-day range (✅ 83 games spanning 20 days), Game Detail (✅), Logos (✅ 30 teams). The /api/games endpoint successfully returns both today's games and scheduled future games with proper is_scheduled flags."
