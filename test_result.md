@@ -234,7 +234,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "All backend endpoints tested and working"
+    - "Games List Endpoint with 20 days"
+    - "Notification format with player score"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
