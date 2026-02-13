@@ -8,7 +8,6 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,9 +18,6 @@ import Constants from 'expo-constants';
 import { useTrackerStore } from './store/trackerStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://sleek-ios-hub.preview.emergentagent.com';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
 
 export default function GamesScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -36,7 +32,6 @@ export default function GamesScreen() {
     setPushToken,
   } = useTrackerStore();
 
-  // Register for push notifications
   const registerForPushNotifications = async () => {
     if (!Device.isDevice) {
       console.log('Must use physical device for Push Notifications');
@@ -67,7 +62,6 @@ export default function GamesScreen() {
     }
   };
 
-  // Fetch games via REST API
   const fetchGames = async () => {
     try {
       const response = await fetch(`${API_URL}/api/games`);
@@ -85,7 +79,6 @@ export default function GamesScreen() {
     registerForPushNotifications();
     fetchGames();
     
-    // Set up polling for updates
     const pollInterval = setInterval(() => {
       fetchGames();
     }, 10000);
@@ -117,54 +110,52 @@ export default function GamesScreen() {
         onPress={() => handleGamePress(game.game_id)}
         activeOpacity={0.8}
       >
-        <View style={styles.cardContent}>
-          {/* Status Badge */}
-          <View style={[styles.statusBadge, isLive && styles.statusLive]}>
-            {isLive && <View style={styles.liveDot} />}
-            <Text style={[styles.statusText, isLive && styles.statusTextLive]}>
-              {game.status || 'Scheduled'}
-            </Text>
+        {/* Status Badge */}
+        <View style={[styles.statusBadge, isLive && styles.statusLive]}>
+          {isLive && <View style={styles.liveDot} />}
+          <Text style={[styles.statusText, isLive && styles.statusTextLive]}>
+            {game.status || 'Scheduled'}
+          </Text>
+        </View>
+
+        {/* Teams and Score */}
+        <View style={styles.matchupContainer}>
+          {/* Away Team */}
+          <View style={styles.teamSection}>
+            {game.away_logo ? (
+              <Image source={{ uri: game.away_logo }} style={styles.teamLogo} resizeMode="contain" />
+            ) : (
+              <View style={styles.placeholderLogo}>
+                <Ionicons name="basketball" size={24} color="#667eea" />
+              </View>
+            )}
+            <Text style={styles.teamCode}>{game.away_team || 'TBD'}</Text>
+            <Text style={styles.teamScore}>{game.away_score || 0}</Text>
           </View>
 
-          {/* Teams Row */}
-          <View style={styles.teamsRow}>
-            {/* Away Team */}
-            <View style={styles.teamColumn}>
-              {game.away_logo ? (
-                <Image source={{ uri: game.away_logo }} style={styles.teamLogo} resizeMode="contain" />
-              ) : (
-                <View style={styles.placeholderLogo}>
-                  <Text style={styles.placeholderText}>{game.away_team?.substring(0, 3) || '?'}</Text>
-                </View>
-              )}
-              <Text style={styles.teamCode}>{game.away_team || 'TBD'}</Text>
-            </View>
-
-            {/* Score Section */}
-            <View style={styles.scoreSection}>
-              <Text style={styles.scoreText}>{game.away_score || 0}</Text>
-              <Text style={styles.vsText}>-</Text>
-              <Text style={styles.scoreText}>{game.home_score || 0}</Text>
-            </View>
-
-            {/* Home Team */}
-            <View style={styles.teamColumn}>
-              {game.home_logo ? (
-                <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
-              ) : (
-                <View style={styles.placeholderLogo}>
-                  <Text style={styles.placeholderText}>{game.home_team?.substring(0, 3) || '?'}</Text>
-                </View>
-              )}
-              <Text style={styles.teamCode}>{game.home_team || 'TBD'}</Text>
-            </View>
+          {/* VS */}
+          <View style={styles.vsContainer}>
+            <Text style={styles.vsText}>VS</Text>
           </View>
 
-          {/* View Match Button */}
-          <TouchableOpacity style={styles.viewButton} activeOpacity={0.7}>
-            <Text style={styles.viewButtonText}>View Match</Text>
-            <Ionicons name="chevron-forward" size={16} color="#667eea" />
-          </TouchableOpacity>
+          {/* Home Team */}
+          <View style={styles.teamSection}>
+            {game.home_logo ? (
+              <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
+            ) : (
+              <View style={styles.placeholderLogo}>
+                <Ionicons name="basketball" size={24} color="#667eea" />
+              </View>
+            )}
+            <Text style={styles.teamCode}>{game.home_team || 'TBD'}</Text>
+            <Text style={styles.teamScore}>{game.home_score || 0}</Text>
+          </View>
+        </View>
+
+        {/* View Match Button */}
+        <View style={styles.viewButton}>
+          <Text style={styles.viewButtonText}>View Match</Text>
+          <Ionicons name="chevron-forward" size={16} color="#667eea" />
         </View>
       </TouchableOpacity>
     );
@@ -219,7 +210,7 @@ export default function GamesScreen() {
           </View>
         </View>
 
-        {/* Games Grid */}
+        {/* Games List */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#667eea" />
@@ -235,7 +226,7 @@ export default function GamesScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.gamesGrid}>
+          <View style={styles.gamesList}>
             {games.map(renderGameCard)}
           </View>
         )}
@@ -386,97 +377,86 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  gamesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
+  gamesList: {
+    paddingHorizontal: 16,
     gap: 12,
   },
   gameCard: {
-    width: CARD_WIDTH,
     backgroundColor: '#fff',
     borderRadius: 16,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    padding: 14,
+    marginBottom: 12,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   statusLive: {
     backgroundColor: '#dcfce7',
   },
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#22c55e',
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748b',
   },
   statusTextLive: {
     color: '#16a34a',
   },
-  teamsRow: {
+  matchupContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  teamColumn: {
-    alignItems: 'center',
+  teamSection: {
     flex: 1,
+    alignItems: 'center',
   },
   teamLogo: {
-    width: 40,
-    height: 40,
-    marginBottom: 4,
+    width: 56,
+    height: 56,
+    marginBottom: 8,
   },
   placeholderLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e2e8f0',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f0f4ff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
-  },
-  placeholderText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748b',
+    marginBottom: 8,
   },
   teamCode: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#374151',
+    marginBottom: 4,
   },
-  scoreSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  scoreText: {
-    fontSize: 22,
+  teamScore: {
+    fontSize: 28,
     fontWeight: '800',
     color: '#667eea',
+  },
+  vsContainer: {
+    paddingHorizontal: 16,
   },
   vsText: {
     fontSize: 14,
@@ -488,12 +468,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f0f4ff',
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 4,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
   },
   viewButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#667eea',
   },
