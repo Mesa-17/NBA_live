@@ -128,6 +128,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "Successfully returns 3 NBA games with proper structure"
+      - working: true
+        agent: "testing"
+        comment: "✅ 20-day requirement verified: Returns 83 games (3 today's + 80 scheduled) spanning 20 days (2026-02-13 to 2026-03-05). All scheduled games have is_scheduled: true flag and required fields (game_id, status, home_team, away_team, home_logo, away_logo)"
 
   - task: "Game Detail Endpoint"
     implemented: true
