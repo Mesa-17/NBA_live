@@ -351,11 +351,52 @@ export default function GamesScreen() {
           />
         }
       >
+        {/* Date Filter */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.dateFilterContainer}
+          contentContainerStyle={styles.dateFilterContent}
+        >
+          {dateFilters.map((date) => {
+            const today = new Date().toISOString().split('T')[0];
+            const isSelected = (selectedDate === 'today' && date === today) || selectedDate === date;
+            const label = formatDateLabel(date);
+            const gamesOnDate = games.filter(g => g.game_date === date).length;
+            
+            return (
+              <TouchableOpacity
+                key={date}
+                onPress={() => setSelectedDate(date === today ? 'today' : date)}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={isSelected ? ['#667eea', '#764ba2'] : ['#ffffff', '#f8fafc']}
+                  style={[styles.dateFilterButton, isSelected && styles.dateFilterButtonActive]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={[styles.dateFilterText, isSelected && styles.dateFilterTextActive]}>
+                    {label}
+                  </Text>
+                  <View style={[styles.dateFilterBadge, isSelected && styles.dateFilterBadgeActive]}>
+                    <Text style={[styles.dateFilterBadgeText, isSelected && styles.dateFilterBadgeTextActive]}>
+                      {gamesOnDate}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
         {/* Section Header */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>All Games</Text>
+          <Text style={styles.sectionTitle}>
+            {selectedDate === 'today' ? "Today's Games" : formatDateLabel(selectedDate)}
+          </Text>
           <View style={styles.gameCount}>
-            <Text style={styles.gameCountText}>{games.length}</Text>
+            <Text style={styles.gameCountText}>{filteredGames.length}</Text>
           </View>
         </View>
 
@@ -365,7 +406,7 @@ export default function GamesScreen() {
             <ActivityIndicator size="large" color="#667eea" />
             <Text style={styles.loadingText}>Loading games...</Text>
           </View>
-        ) : games.length === 0 ? (
+        ) : filteredGames.length === 0 ? (
           <View style={styles.emptyContainer}>
             <LinearGradient
               colors={['#f0f4ff', '#e8edff']}
@@ -373,8 +414,12 @@ export default function GamesScreen() {
             >
               <Ionicons name="basketball-outline" size={48} color="#667eea" />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>No Games Today</Text>
-            <Text style={styles.emptySubtitle}>Check back later for NBA action!</Text>
+            <Text style={styles.emptyTitle}>No Games</Text>
+            <Text style={styles.emptySubtitle}>
+              {selectedDate === 'today' 
+                ? "No games scheduled for today. Check other dates!" 
+                : "No games scheduled for this date."}
+            </Text>
             <TouchableOpacity onPress={onRefresh}>
               <LinearGradient
                 colors={['#667eea', '#764ba2']}
@@ -388,7 +433,7 @@ export default function GamesScreen() {
           </View>
         ) : (
           <View style={styles.gamesList}>
-            {games.map((game, index) => renderGameCard(game, index))}
+            {filteredGames.map((game, index) => renderGameCard(game, index))}
           </View>
         )}
       </ScrollView>
