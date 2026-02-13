@@ -126,6 +126,12 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     const playerName = data.player_name;
     const desc = data.description || '';
     const totalPoints = data.total_points || 0;
+    const period = data.period || 1;
+    const clock = data.clock || '00:00';
+    const scoreHome = data.score_home || 0;
+    const scoreAway = data.score_away || 0;
+    const homeTeam = data.home_team || '';
+    const awayTeam = data.away_team || '';
     
     if (!playerName || !state.trackedPlayers.includes(playerName)) return;
     
@@ -148,24 +154,34 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     if (descLower.includes('3pt') || descLower.includes('three point') || descLower.includes('3-pointer')) {
       scoreType = '3-pointer';
     } else if (descLower.includes('free throw') || descLower.includes(' ft ')) {
-      scoreType = 'free throw';
+      scoreType = 'Free Throw';
     }
     
-    const scoreMsg = `${playerName} scores ${scoreType}!`;
-    const statsMsg = `Now has ${totalPoints} PTS`;
+    // Format: "LeBron James Scores 3-pointer (25 pts)"
+    const title = `🏀 ${playerName} Scores ${scoreType} (${totalPoints} pts)`;
+    
+    // Format: "Q1 - 04:00 | Lakers lead 78-72 vs Celtics"
+    const periodStr = period > 4 ? `OT${period - 4}` : `Q${period}`;
+    const leadingTeam = scoreHome > scoreAway ? homeTeam : awayTeam;
+    const leadScore = Math.max(scoreHome, scoreAway);
+    const trailScore = Math.min(scoreHome, scoreAway);
+    const gameScore = scoreHome === scoreAway 
+      ? `Tied ${scoreHome}-${scoreAway}` 
+      : `${leadingTeam} lead ${leadScore}-${trailScore}`;
+    const body = `${periodStr} - ${clock} | ${gameScore} vs ${scoreHome > scoreAway ? awayTeam : homeTeam}`;
     
     // Show in-app toast
     Toast.show({
       type: 'success',
-      text1: `🏀 ${scoreMsg}`,
-      text2: statsMsg,
+      text1: title,
+      text2: body,
       position: 'top',
       visibilityTime: 4000,
       topOffset: 60,
     });
     
     // Send push notification (works even when app is in background)
-    sendPushNotification(`🏀 ${scoreMsg}`, statsMsg);
+    sendPushNotification(title, body);
     
     // Mark as notified
     set((s) => ({
