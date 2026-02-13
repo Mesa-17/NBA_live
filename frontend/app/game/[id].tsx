@@ -107,9 +107,10 @@ export default function GameDetailScreen() {
     if (socketRef.current?.connected) return;
 
     const socket = io(API_URL, {
-      path: '/api/socket.io',
-      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      transports: ['polling', 'websocket'],
       reconnection: true,
+      forceNew: true,
     });
 
     socket.on('connect', () => {
