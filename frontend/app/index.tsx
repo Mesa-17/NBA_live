@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -434,51 +434,52 @@ const styles = StyleSheet.create({
   statusTextLive: {
     color: '#16a34a',
   },
-  teamsContainer: {
+  teamsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 14,
   },
-  teamBox: {
-    flex: 1,
+  teamColumn: {
     alignItems: 'center',
+    flex: 1,
   },
   teamLogo: {
-    width: 44,
-    height: 44,
-    marginBottom: 6,
+    width: 40,
+    height: 40,
+    marginBottom: 4,
   },
   placeholderLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   placeholderText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#64748b',
   },
   teamCode: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#374151',
-    marginBottom: 2,
   },
-  score: {
+  scoreSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  scoreText: {
     fontSize: 22,
     fontWeight: '800',
     color: '#667eea',
   },
-  vsDivider: {
-    paddingHorizontal: 8,
-  },
   vsText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#9ca3af',
   },
