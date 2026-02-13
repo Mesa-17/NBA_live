@@ -187,7 +187,7 @@ export default function GamesScreen() {
   };
 
   const renderGameCard = (game: any, index: number) => {
-    const isLive = game.status?.toLowerCase().includes('q') || 
+    const isLive = game.is_live || game.status?.toLowerCase().includes('q') || 
                    game.status?.toLowerCase().includes('half') ||
                    game.status?.toLowerCase().includes('ot');
 
@@ -204,9 +204,9 @@ export default function GamesScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          {/* Live Badge */}
-          {isLive && (
-            <View style={styles.liveBadgeContainer}>
+          {/* Header Row - Live Badge or Status */}
+          <View style={styles.cardHeader}>
+            {isLive ? (
               <LinearGradient
                 colors={['#ef4444', '#dc2626']}
                 style={styles.liveBadge}
@@ -216,73 +216,49 @@ export default function GamesScreen() {
                 <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
                 <Text style={styles.liveText}>LIVE</Text>
               </LinearGradient>
-            </View>
-          )}
-
-          {/* Status */}
-          {!isLive && (
-            <View style={styles.scheduledBadge}>
-              <Ionicons name="time-outline" size={14} color="#64748b" />
-              <Text style={styles.scheduledText}>{game.status || 'Scheduled'}</Text>
-            </View>
-          )}
-
-          {/* Matchup */}
-          <View style={styles.matchupContainer}>
-            {/* Away Team */}
-            <View style={styles.teamSection}>
-              {game.away_logo ? (
-                <Image source={{ uri: game.away_logo }} style={styles.teamLogo} resizeMode="contain" />
-              ) : (
-                <LinearGradient
-                  colors={['#667eea', '#764ba2']}
-                  style={styles.placeholderLogo}
-                >
-                  <Text style={styles.placeholderText}>{game.away_team?.substring(0, 3) || '?'}</Text>
-                </LinearGradient>
-              )}
-              <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.away_team || 'TBD'}</Text>
-              <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>{game.away_score || 0}</Text>
-            </View>
-
-            {/* VS Indicator */}
-            <View style={styles.vsContainer}>
-              <View style={[styles.vsLine, isLive && styles.vsLineLight]} />
-              <Text style={[styles.vsText, isLive && styles.vsTextLight]}>VS</Text>
-              <View style={[styles.vsLine, isLive && styles.vsLineLight]} />
-            </View>
-
-            {/* Home Team */}
-            <View style={styles.teamSection}>
-              {game.home_logo ? (
-                <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
-              ) : (
-                <LinearGradient
-                  colors={['#667eea', '#764ba2']}
-                  style={styles.placeholderLogo}
-                >
-                  <Text style={styles.placeholderText}>{game.home_team?.substring(0, 3) || '?'}</Text>
-                </LinearGradient>
-              )}
-              <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.home_team || 'TBD'}</Text>
-              <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>{game.home_score || 0}</Text>
-            </View>
+            ) : (
+              <View style={styles.scheduledBadge}>
+                <Ionicons name="time-outline" size={12} color="#64748b" />
+                <Text style={styles.scheduledText}>{game.status || 'Scheduled'}</Text>
+              </View>
+            )}
           </View>
 
-          {/* Action Button */}
-          <TouchableOpacity style={[styles.viewButton, isLive && styles.viewButtonLive]} activeOpacity={0.8}>
-            <LinearGradient
-              colors={isLive ? ['#667eea', '#764ba2'] : ['#f0f4ff', '#e8edff']}
-              style={styles.viewButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={[styles.viewButtonText, isLive && styles.viewButtonTextLight]}>
-                {isLive ? 'Watch Live' : 'View Details'}
-              </Text>
-              <Ionicons name="arrow-forward" size={16} color={isLive ? '#fff' : '#667eea'} />
-            </LinearGradient>
-          </TouchableOpacity>
+          {/* Away Team Row */}
+          <View style={styles.teamRow}>
+            {game.away_logo ? (
+              <Image source={{ uri: game.away_logo }} style={styles.teamLogoSmall} resizeMode="contain" />
+            ) : (
+              <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={styles.placeholderLogoSmall}
+              >
+                <Text style={styles.placeholderTextSmall}>{game.away_team?.substring(0, 3) || '?'}</Text>
+              </LinearGradient>
+            )}
+            <Text style={[styles.teamName, isLive && styles.teamNameLight]}>{game.away_team || 'TBD'}</Text>
+            <Text style={[styles.teamScoreCompact, isLive && styles.teamScoreCompactLight]}>
+              {isLive || game.away_score > 0 ? game.away_score : '-'}
+            </Text>
+          </View>
+
+          {/* Home Team Row */}
+          <View style={styles.teamRow}>
+            {game.home_logo ? (
+              <Image source={{ uri: game.home_logo }} style={styles.teamLogoSmall} resizeMode="contain" />
+            ) : (
+              <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={styles.placeholderLogoSmall}
+              >
+                <Text style={styles.placeholderTextSmall}>{game.home_team?.substring(0, 3) || '?'}</Text>
+              </LinearGradient>
+            )}
+            <Text style={[styles.teamName, isLive && styles.teamNameLight]}>{game.home_team || 'TBD'}</Text>
+            <Text style={[styles.teamScoreCompact, isLive && styles.teamScoreCompactLight]}>
+              {isLive || game.home_score > 0 ? game.home_score : '-'}
+            </Text>
+          </View>
         </LinearGradient>
       </TouchableOpacity>
     );
