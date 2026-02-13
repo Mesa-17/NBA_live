@@ -116,10 +116,9 @@ def get_today_games():
         return []
 
 def get_scheduled_games(days=20):
-    """Fetch scheduled games for next N days"""
+    """Fetch real NBA schedule for next N days"""
     try:
-        from nba_api.stats.endpoints import leaguegamefinder, scoreboardv2
-        from nba_api.stats.static import teams
+        import requests
         from datetime import timedelta
         
         all_games = []
@@ -129,57 +128,97 @@ def get_scheduled_games(days=20):
         today_games = get_today_games()
         all_games.extend(today_games)
         
-        # Try to get future scheduled games using different approach
+        # Fetch real NBA schedule from official endpoint
         try:
-            from nba_api.stats.endpoints import leaguegamelog
-            # This gets recent and upcoming games
-        except:
-            pass
-        
-        # For future games, we'll use a schedule lookup
-        # NBA API doesn't have a direct "future games" endpoint readily available
-        # So we'll create placeholder data for demonstration
-        nba_teams_list = list(nba_logos.keys())
-        
-        for day_offset in range(1, days + 1):
-            future_date = today + timedelta(days=day_offset)
-            date_str = future_date.strftime("%Y-%m-%d")
-            display_date = future_date.strftime("%b %d")
+            # Get current season year (NBA season spans two years)
+            current_year = today.year
+            season_year = current_year if today.month >= 10 else current_year
             
-            # Generate some scheduled games (in production, this would come from NBA API schedule)
-            # Using a simple algorithm to create realistic-looking matchups
-            num_games = (day_offset % 5) + 2  # 2-6 games per day
+            schedule_url = f"https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json"
+            response = requests.get(schedule_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0',
+                'Accept': 'application/json',
+                'Referer': 'https://www.nba.com/'
+            })
             
-            for game_num in range(num_games):
-                away_idx = (day_offset * 3 + game_num * 2) % len(nba_teams_list)
-                home_idx = (day_offset * 5 + game_num * 3 + 1) % len(nba_teams_list)
+            if response.status_code == 200:
+                schedule_data = response.json()
+                game_dates = schedule_data.get('leagueSchedule', {}).get('gameDates', [])
                 
-                if away_idx == home_idx:
-                    home_idx = (home_idx + 1) % len(nba_teams_list)
+                today_str = today.strftime("%m/%d/%Y")
+                end_date = today + timedelta(days=days)
                 
-                away_team = nba_teams_list[away_idx]
-                home_team = nba_teams_list[home_idx]
+                for game_date_entry in game_dates:
+                    game_date_str = game_date_entry.get('gameDate', '')
+                    
+                    # Parse the date (format: "01/15/2026 00:00:00")
+                    try:
+                        game_date = datetime.strptime(game_date_str.split(' ')[0], "%m/%d/%Y")
+                    except:
+                        continue
+                    
+                    # Only include future games within our range
+                    if game_date.date() <= today.date() or game_date > end_date:
+                        continue
+                    
+                    date_str = game_date.strftime("%Y-%m-%d")
+                    display_date = game_date.strftime("%b %d")
+                    
+                    for game in game_date_entry.get('games', []):
+                        home_team_data = game.get('homeTeam', {})
+                        away_team_data = game.get('awayTeam', {})
+                        
+                        home_team = home_team_data.get('teamTricode', '')
+                        away_team = away_team_data.get('teamTricode', '')
+                        
+                        # Get game time
+                        game_time_utc = game.get('gameDateTimeUTC', '')
+                        try:
+                            game_dt = datetime.strptime(game_time_utc, "%Y-%m-%dT%H:%M:%SZ")
+                            # Convert to ET (UTC-5)
+                            game_dt_et = game_dt - timedelta(hours=5)
+                            time_str = game_dt_et.strftime("%I:%M %p ET").lstrip('0')
+                        except:
+                            time_str = "TBD"
+                        
+                        game_status = game.get('gameStatus', 1)
+                        status_text = game.get('gameStatusText', '')
+                        
+                        # Determine if game is live
+                        is_live = game_status == 2
+                        
+                        if game_status == 1:
+                            status_display = f"{display_date} • {time_str}"
+                        elif game_status == 2:
+                            status_display = status_text or "LIVE"
+                        else:
+                            status_display = "Final"
+                        
+                        all_games.append({
+                            "label": f"{away_team} vs {home_team}",
+                            "game_id": game.get('gameId', f"future_{date_str}_{len(all_games)}"),
+                            "status": status_display,
+                            "home_score": home_team_data.get('score', 0),
+                            "away_score": away_team_data.get('score', 0),
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "home_logo": nba_logos.get(home_team, ""),
+                            "away_logo": nba_logos.get(away_team, ""),
+                            "game_date": date_str,
+                            "is_today": False,
+                            "is_scheduled": game_status == 1,
+                            "is_live": is_live
+                        })
                 
-                # Generate realistic game times
-                hours = [19, 19, 20, 20, 21, 22]  # 7pm, 8pm, 9pm, 10pm ET
-                hour = hours[game_num % len(hours)]
+                print(f"✅ Loaded {len(all_games)} games from NBA schedule")
+                return all_games
                 
-                all_games.append({
-                    "label": f"{away_team} vs {home_team}",
-                    "game_id": f"future_{date_str}_{game_num}",
-                    "status": f"{display_date} • {hour}:00 ET",
-                    "home_score": 0,
-                    "away_score": 0,
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "home_logo": nba_logos.get(home_team, ""),
-                    "away_logo": nba_logos.get(away_team, ""),
-                    "game_date": date_str,
-                    "is_today": False,
-                    "is_scheduled": True
-                })
+        except Exception as e:
+            print(f"⚠️ Could not fetch NBA schedule: {e}")
         
-        return all_games
+        # Fallback: return only today's games if schedule fetch fails
+        return today_games
+        
     except Exception as e:
         print(f"❌ Error fetching scheduled games: {e}")
         return get_today_games()
