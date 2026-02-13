@@ -244,3 +244,5 @@ agent_communication:
     message: "NBA Live Tracker app implementation complete. Backend tested with all 4 endpoints working. Frontend screens verified with screenshots."
   - agent: "testing"
     message: "All backend API endpoints tested and working correctly. NBA API integration functional."
+  - agent: "main"
+    message: "Implemented 4 new features: 1) Backend /api/games now returns games for next 20 days, 2) Notifications now include player's total score, 3) Removed info card from home screen, 4) Added push notification config for background notifications. Ready for backend testing."
