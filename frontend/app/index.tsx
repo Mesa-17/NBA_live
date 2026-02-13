@@ -684,29 +684,4 @@ const styles = StyleSheet.create({
   viewButtonTextLight: {
     color: '#fff',
   },
-  infoCard: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  infoGradient: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400e',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#a16207',
-    lineHeight: 18,
-  },
 });
