@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,9 +23,26 @@ import { useTrackerStore } from './store/trackerStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
 
+// Helper to format date for display
+const formatDateLabel = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  if (dateStr === today.toISOString().split('T')[0]) {
+    return 'Today';
+  } else if (dateStr === tomorrow.toISOString().split('T')[0]) {
+    return 'Tomorrow';
+  } else {
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+};
+
 export default function GamesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>('today');
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
   const {
@@ -36,6 +53,29 @@ export default function GamesScreen() {
     setGames,
     setPushToken,
   } = useTrackerStore();
+
+  // Get unique dates from games and create filter options
+  const dateFilters = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const dates = new Set<string>();
+    dates.add(today); // Always include today
+    
+    games.forEach(game => {
+      if (game.game_date) {
+        dates.add(game.game_date);
+      }
+    });
+    
+    const sortedDates = Array.from(dates).sort();
+    return sortedDates.slice(0, 10); // Show max 10 date options
+  }, [games]);
+
+  // Filter games by selected date
+  const filteredGames = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const filterDate = selectedDate === 'today' ? today : selectedDate;
+    return games.filter(game => game.game_date === filterDate);
+  }, [games, selectedDate]);
 
   // Pulse animation for live indicator
   useEffect(() => {
