@@ -154,11 +154,11 @@ export default function GamesScreen() {
 
   // Demo notification function
   const showDemoNotification = async () => {
-    // Show in-app toast with player score
+    // Show in-app toast with new format
     Toast.show({
       type: 'success',
-      text1: '🏀 LeBron James scores 3-pointer!',
-      text2: 'Now has 25 PTS',
+      text1: '🏀 LeBron James Scores 3-pointer (25 pts)',
+      text2: 'Q1 - 04:00 | Lakers lead 78-72 vs Celtics',
       position: 'top',
       visibilityTime: 4000,
       topOffset: 60,
@@ -169,8 +169,8 @@ export default function GamesScreen() {
       if (Device.isDevice) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: '🏀 LeBron James scores 3-pointer!',
-            body: 'Now has 25 PTS',
+            title: '🏀 LeBron James Scores 3-pointer (25 pts)',
+            body: 'Q1 - 04:00 | Lakers lead 78-72 vs Celtics',
             sound: true,
             priority: Notifications.AndroidNotificationPriority.HIGH,
           },
