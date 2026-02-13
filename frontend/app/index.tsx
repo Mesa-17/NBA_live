@@ -313,7 +313,7 @@ export default function GamesScreen() {
       >
         {/* Section Header */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Games</Text>
+          <Text style={styles.sectionTitle}>All Games</Text>
           <View style={styles.gameCount}>
             <Text style={styles.gameCountText}>{games.length}</Text>
           </View>
