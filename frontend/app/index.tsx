@@ -79,11 +79,12 @@ export default function GamesScreen() {
     console.log('🔌 Connecting to:', SOCKET_URL);
     
     const socket = io(SOCKET_URL, {
-      path: '/api/socket.io',
-      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      forceNew: true,
     });
 
     socket.on('connect', () => {
