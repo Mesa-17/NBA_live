@@ -2,80 +2,92 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTrackerStore } from './store/trackerStore';
 
 const queryClient = new QueryClient();
 
-function CustomDrawerContent(props: any) {
+function TrackedPlayersDrawer() {
   const { trackedPlayers, playerStats, playerSubStatus, removeTrackedPlayer } = useTrackerStore();
 
   return (
-    <SafeAreaView style={styles.drawerContainer}>
+    <View style={styles.trackedSection}>
+      <View style={styles.sectionHeader}>
+        <Ionicons name="notifications" size={20} color="#667eea" />
+        <Text style={styles.sectionTitle}>Tracked Players</Text>
+      </View>
+      
+      {trackedPlayers.length === 0 ? (
+        <Text style={styles.noPlayersText}>No players tracked yet.{"\n"}Tap the bell icon next to a player to start tracking.</Text>
+      ) : (
+        <ScrollView style={styles.trackedList} showsVerticalScrollIndicator={false}>
+          {trackedPlayers.map((player) => {
+            const stats = playerStats[player] || { pts: 0, reb: 0, ast: 0 };
+            const subStatus = playerSubStatus[player] || 'in';
+            
+            return (
+              <View key={player} style={styles.trackedPlayerCard}>
+                <View style={styles.playerHeader}>
+                  <View style={styles.playerNameRow}>
+                    <Text style={styles.playerName} numberOfLines={1}>{player}</Text>
+                    {subStatus === 'in' ? (
+                      <Ionicons name="basketball" size={14} color="#10b981" />
+                    ) : (
+                      <Ionicons name="caret-down" size={14} color="#ef4444" />
+                    )}
+                  </View>
+                  <TouchableOpacity onPress={() => removeTrackedPlayer(player)}>
+                    <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.statsRow}>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>PTS</Text>
+                    <Text style={styles.statValue}>{stats.pts}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>REB</Text>
+                    <Text style={styles.statValue}>{stats.reb}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statLabel}>AST</Text>
+                    <Text style={styles.statValue}>{stats.ast}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+function CustomDrawerContent(props: any) {
+  const { navigation } = props;
+
+  return (
+    <View style={styles.drawerContainer}>
       <View style={styles.drawerHeader}>
         <Ionicons name="basketball" size={32} color="#fff" />
         <Text style={styles.drawerTitle}>NBA Tracker</Text>
       </View>
       
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
-        <DrawerItemList {...props} />
+      <ScrollView style={styles.drawerContent}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('index')}
+        >
+          <Ionicons name="basketball-outline" size={22} color="#667eea" />
+          <Text style={styles.menuItemText}>Games</Text>
+        </TouchableOpacity>
         
-        <View style={styles.trackedSection}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="notifications" size={20} color="#667eea" />
-            <Text style={styles.sectionTitle}>Tracked Players</Text>
-          </View>
-          
-          {trackedPlayers.length === 0 ? (
-            <Text style={styles.noPlayersText}>No players tracked yet.{"\n"}Tap the bell icon next to a player to start tracking.</Text>
-          ) : (
-            <ScrollView style={styles.trackedList}>
-              {trackedPlayers.map((player) => {
-                const stats = playerStats[player] || { pts: 0, reb: 0, ast: 0 };
-                const subStatus = playerSubStatus[player] || 'in';
-                
-                return (
-                  <View key={player} style={styles.trackedPlayerCard}>
-                    <View style={styles.playerHeader}>
-                      <View style={styles.playerNameRow}>
-                        <Text style={styles.playerName}>{player}</Text>
-                        {subStatus === 'in' ? (
-                          <Ionicons name="basketball" size={14} color="#10b981" />
-                        ) : (
-                          <Ionicons name="caret-down" size={14} color="#ef4444" />
-                        )}
-                      </View>
-                      <TouchableOpacity onPress={() => removeTrackedPlayer(player)}>
-                        <Ionicons name="close-circle" size={20} color="#9ca3af" />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.statsRow}>
-                      <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>PTS</Text>
-                        <Text style={styles.statValue}>{stats.pts}</Text>
-                      </View>
-                      <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>REB</Text>
-                        <Text style={styles.statValue}>{stats.reb}</Text>
-                      </View>
-                      <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>AST</Text>
-                        <Text style={styles.statValue}>{stats.ast}</Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          )}
-        </View>
-      </DrawerContentScrollView>
-    </SafeAreaView>
+        <TrackedPlayersDrawer />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -98,22 +110,12 @@ export default function Layout() {
               backgroundColor: '#f8fafc',
               width: 320,
             },
-            drawerActiveTintColor: '#667eea',
-            drawerInactiveTintColor: '#64748b',
-            drawerLabelStyle: {
-              fontSize: 16,
-              fontWeight: '600',
-            },
           }}
         >
           <Drawer.Screen
             name="index"
             options={{
               title: 'NBA Live Tracker',
-              drawerLabel: 'Games',
-              drawerIcon: ({ color, size }) => (
-                <Ionicons name="basketball-outline" size={size} color={color} />
-              ),
             }}
           />
           <Drawer.Screen
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    paddingTop: 10,
+    paddingTop: 50,
     backgroundColor: '#667eea',
     gap: 12,
   },
@@ -149,11 +151,30 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   drawerContent: {
-    paddingTop: 10,
+    flex: 1,
+    padding: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    gap: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
   },
   trackedSection: {
-    marginTop: 20,
-    paddingHorizontal: 16,
+    flex: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -177,7 +198,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   trackedList: {
-    maxHeight: 400,
+    flex: 1,
   },
   trackedPlayerCard: {
     backgroundColor: '#fff',
@@ -202,11 +223,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   playerName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1f2937',
+    flex: 1,
   },
   statsRow: {
     flexDirection: 'row',
