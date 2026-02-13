@@ -1,5 +1,5 @@
 import React from 'react';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
@@ -12,7 +12,38 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="light" />
-        <Slot />
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#667eea',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        >
+          <Stack.Screen 
+            name="index" 
+            options={{ 
+              title: 'NBA Live Tracker',
+              headerShown: true,
+            }} 
+          />
+          <Stack.Screen 
+            name="game/[id]" 
+            options={{ 
+              title: 'Game Details',
+            }} 
+          />
+          <Stack.Screen 
+            name="tracked" 
+            options={{ 
+              title: 'Tracked Players',
+              presentation: 'modal',
+            }} 
+          />
+        </Stack>
         <Toast />
       </GestureHandlerRootView>
     </QueryClientProvider>
