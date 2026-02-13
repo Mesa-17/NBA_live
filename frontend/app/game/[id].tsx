@@ -17,7 +17,7 @@ import { useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useTrackerStore } from '../store/trackerStore';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://sleek-ios-hub.preview.emergentagent.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -21,7 +21,7 @@ import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 import { useTrackerStore } from './store/trackerStore';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://sleek-ios-hub.preview.emergentagent.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
 
 export default function GamesScreen() {
   const [refreshing, setRefreshing] = useState(false);
