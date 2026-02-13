@@ -97,10 +97,16 @@ def get_today_games():
         games = scoreboard.ScoreBoard().get_dict()["scoreboard"]["games"]
         game_list = []
         for g in games:
+            status_text = g.get("gameStatusText", "")
+            game_status = g.get("gameStatus", 1)
+            
+            # Determine if game is live (status 2 = in progress)
+            is_live = game_status == 2
+            
             game_list.append({
                 "label": f"{g['awayTeam']['teamTricode']} vs {g['homeTeam']['teamTricode']}",
                 "game_id": g["gameId"],
-                "status": g.get("gameStatusText", ""),
+                "status": status_text,
                 "home_score": g['homeTeam'].get('score', 0),
                 "away_score": g['awayTeam'].get('score', 0),
                 "home_team": g['homeTeam']['teamTricode'],
@@ -108,7 +114,9 @@ def get_today_games():
                 "home_logo": nba_logos.get(g['homeTeam']['teamTricode'], ""),
                 "away_logo": nba_logos.get(g['awayTeam']['teamTricode'], ""),
                 "game_date": datetime.now().strftime("%Y-%m-%d"),
-                "is_today": True
+                "is_today": True,
+                "is_live": is_live,
+                "is_scheduled": game_status == 1
             })
         return game_list
     except Exception as e:
