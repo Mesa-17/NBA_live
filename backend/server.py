@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socketio
@@ -10,7 +7,6 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from datetime import datetime
-import threading
 
 load_dotenv()
 
@@ -26,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Socket.IO
+# Initialize Socket.IO with correct path for kubernetes ingress
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
@@ -34,8 +30,8 @@ sio = socketio.AsyncServer(
     ping_interval=25
 )
 
-# Wrap with ASGI app
-socket_app = socketio.ASGIApp(sio, app)
+# Wrap with ASGI app - socket.io path set for /api prefix routing
+socket_app = socketio.ASGIApp(sio, app, socketio_path='/socket.io')
 
 # MongoDB connection
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
