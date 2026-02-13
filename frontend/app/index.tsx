@@ -126,45 +126,45 @@ export default function GamesScreen() {
             </Text>
           </View>
 
-          {/* Teams */}
-          <View style={styles.teamsContainer}>
+          {/* Teams Row */}
+          <View style={styles.teamsRow}>
             {/* Away Team */}
-            <View style={styles.teamBox}>
+            <View style={styles.teamColumn}>
               {game.away_logo ? (
                 <Image source={{ uri: game.away_logo }} style={styles.teamLogo} resizeMode="contain" />
               ) : (
                 <View style={styles.placeholderLogo}>
-                  <Text style={styles.placeholderText}>{game.away_team}</Text>
+                  <Text style={styles.placeholderText}>{game.away_team?.substring(0, 3) || '?'}</Text>
                 </View>
               )}
-              <Text style={styles.teamCode}>{game.away_team}</Text>
-              <Text style={styles.score}>{game.away_score || 0}</Text>
+              <Text style={styles.teamCode}>{game.away_team || 'TBD'}</Text>
             </View>
 
-            {/* VS Divider */}
-            <View style={styles.vsDivider}>
-              <Text style={styles.vsText}>VS</Text>
+            {/* Score Section */}
+            <View style={styles.scoreSection}>
+              <Text style={styles.scoreText}>{game.away_score || 0}</Text>
+              <Text style={styles.vsText}>-</Text>
+              <Text style={styles.scoreText}>{game.home_score || 0}</Text>
             </View>
 
             {/* Home Team */}
-            <View style={styles.teamBox}>
+            <View style={styles.teamColumn}>
               {game.home_logo ? (
                 <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
               ) : (
                 <View style={styles.placeholderLogo}>
-                  <Text style={styles.placeholderText}>{game.home_team}</Text>
+                  <Text style={styles.placeholderText}>{game.home_team?.substring(0, 3) || '?'}</Text>
                 </View>
               )}
-              <Text style={styles.teamCode}>{game.home_team}</Text>
-              <Text style={styles.score}>{game.home_score || 0}</Text>
+              <Text style={styles.teamCode}>{game.home_team || 'TBD'}</Text>
             </View>
           </View>
 
           {/* View Match Button */}
-          <View style={styles.viewButton}>
+          <TouchableOpacity style={styles.viewButton} activeOpacity={0.7}>
             <Text style={styles.viewButtonText}>View Match</Text>
             <Ionicons name="chevron-forward" size={16} color="#667eea" />
-          </View>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
