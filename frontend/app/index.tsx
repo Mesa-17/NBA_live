@@ -351,22 +351,6 @@ export default function GamesScreen() {
             {games.map((game, index) => renderGameCard(game, index))}
           </View>
         )}
-
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <LinearGradient
-            colors={['#fef3c7', '#fde68a']}
-            style={styles.infoGradient}
-          >
-            <Ionicons name="information-circle" size={24} color="#d97706" />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Real-Time Updates</Text>
-              <Text style={styles.infoText}>
-                Scores update every 5 seconds during live games. Track players to get instant notifications when they score!
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
       </ScrollView>
     </View>
   );
