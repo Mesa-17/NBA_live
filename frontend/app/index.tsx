@@ -124,16 +124,22 @@ export default function GamesScreen() {
       topOffset: 60,
     });
 
-    // Schedule push notification
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '\ud83c\udfc0 Player Alert!',
-        body: 'LeBron James scored a 3-pointer! (25 PTS)',
-        sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-      },
-      trigger: { seconds: 2 },
-    });
+    // Schedule push notification (only on native devices)
+    try {
+      if (Device.isDevice) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '\ud83c\udfc0 Player Alert!',
+            body: 'LeBron James scored a 3-pointer! (25 PTS)',
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+          },
+          trigger: { seconds: 2 },
+        });
+      }
+    } catch (error) {
+      console.log('Push notification not available:', error);
+    }
   };
 
   const handleGamePress = (gameId: string) => {
