@@ -125,46 +125,47 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     const state = get();
     const playerName = data.player_name;
     const desc = data.description || '';
+    const totalPoints = data.total_points || 0;
     
     if (!playerName || !state.trackedPlayers.includes(playerName)) return;
     
     const actionId = `${data.game_id}_${data.action_id}`;
     if (state.notifiedActions.has(actionId)) return;
     
-    // Update points
-    const ptsMatch = desc.match(/\((\d+)\s*PTS?\)/i);
-    if (ptsMatch) {
+    // Update points from backend data
+    if (totalPoints > 0) {
       set((s) => ({
         playerStats: {
           ...s.playerStats,
-          [playerName]: { ...s.playerStats[playerName], pts: parseInt(ptsMatch[1]) },
+          [playerName]: { ...s.playerStats[playerName], pts: totalPoints },
         },
       }));
     }
     
     // Determine score type
-    let scoreMsg = '';
+    let scoreType = '2-pointer';
     const descLower = desc.toLowerCase();
     if (descLower.includes('3pt') || descLower.includes('three point') || descLower.includes('3-pointer')) {
-      scoreMsg = `${playerName} scores 3-pointer!`;
+      scoreType = '3-pointer';
     } else if (descLower.includes('free throw') || descLower.includes(' ft ')) {
-      scoreMsg = `${playerName} scores free throw!`;
-    } else {
-      scoreMsg = `${playerName} scores 2-pointer!`;
+      scoreType = 'free throw';
     }
+    
+    const scoreMsg = `${playerName} scores ${scoreType}!`;
+    const statsMsg = `Now has ${totalPoints} PTS`;
     
     // Show in-app toast
     Toast.show({
       type: 'success',
-      text1: '🏀 Score!',
-      text2: scoreMsg,
+      text1: `🏀 ${scoreMsg}`,
+      text2: statsMsg,
       position: 'top',
       visibilityTime: 4000,
       topOffset: 60,
     });
     
-    // Send push notification
-    sendPushNotification('🏀 Score!', scoreMsg);
+    // Send push notification (works even when app is in background)
+    sendPushNotification(`🏀 ${scoreMsg}`, statsMsg);
     
     // Mark as notified
     set((s) => ({
