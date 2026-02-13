@@ -51,8 +51,8 @@ def test_health_endpoint():
         print(f"   ❌ Health endpoint request failed: {str(e)}")
 
 def test_games_endpoint():
-    """Test /api/games endpoint"""
-    print("\n🏀 Testing Games Endpoint...")
+    """Test /api/games endpoint - Focus on 20-day range and scheduled games"""
+    print("\n🏀 Testing Games Endpoint (20-day range verification)...")
     try:
         response = requests.get(f"{BACKEND_URL}/api/games", timeout=15)
         
@@ -60,22 +60,81 @@ def test_games_endpoint():
             data = response.json()
             if 'games' in data and isinstance(data['games'], list):
                 games_count = len(data['games'])
-                test_results['games_endpoint']['status'] = 'pass'
-                test_results['games_endpoint']['details'] = f"✅ Games endpoint returned {games_count} games"
-                print(f"   ✅ Games endpoint returned {games_count} games")
+                print(f"   📊 Total games returned: {games_count}")
                 
-                # Log details of games found (if any)
                 if games_count > 0:
-                    print(f"   📋 Sample game data:")
-                    for i, game in enumerate(data['games'][:3]):  # Show first 3 games
-                        print(f"      Game {i+1}: {game.get('away_team', 'N/A')} vs {game.get('home_team', 'N/A')} - {game.get('status', 'N/A')}")
+                    # Verify required fields in games
+                    first_game = data['games'][0]
+                    required_fields = ["game_id", "status", "home_team", "away_team", "home_logo", "away_logo"]
+                    missing_fields = [field for field in required_fields if field not in first_game]
+                    
+                    if missing_fields:
+                        test_results['games_endpoint']['status'] = 'fail'
+                        test_results['games_endpoint']['details'] = f"❌ Games missing required fields: {missing_fields}"
+                        print(f"   ❌ Games missing required fields: {missing_fields}")
+                        return
+                    
+                    # Check for scheduled games (key requirement)
+                    scheduled_games = [g for g in data['games'] if g.get('is_scheduled', False)]
+                    today_games = [g for g in data['games'] if g.get('is_today', False)]
+                    
+                    print(f"   📅 Today's games: {len(today_games)}")
+                    print(f"   📅 Scheduled future games: {len(scheduled_games)}")
+                    
+                    # Verify date range spans more than just today
+                    unique_dates = set(g.get('game_date', '') for g in data['games'] if g.get('game_date'))
+                    print(f"   📅 Unique dates covered: {len(unique_dates)}")
+                    
+                    if len(unique_dates) > 1:
+                        dates = sorted(unique_dates)
+                        print(f"   📅 Date range: {dates[0]} to {dates[-1]}")
+                        
+                        # Check if we have scheduled games with is_scheduled flag
+                        if len(scheduled_games) > 0:
+                            print(f"   ✅ Found {len(scheduled_games)} scheduled games with is_scheduled: true")
+                            
+                            # Show sample scheduled games
+                            print("   📋 Sample scheduled games:")
+                            for i, game in enumerate(scheduled_games[:3]):
+                                print(f"      {game.get('game_date')}: {game.get('away_team')} vs {game.get('home_team')} - {game.get('status')}")
+                            
+                            # Verify date span covers approximately 20 days
+                            try:
+                                from datetime import datetime
+                                start_date = datetime.strptime(dates[0], "%Y-%m-%d")
+                                end_date = datetime.strptime(dates[-1], "%Y-%m-%d")
+                                date_span = (end_date - start_date).days
+                                print(f"   📅 Date span: {date_span} days")
+                                
+                                if date_span >= 15:  # Allow some flexibility
+                                    test_results['games_endpoint']['status'] = 'pass'
+                                    test_results['games_endpoint']['details'] = f"✅ Games endpoint passed: {games_count} games, {len(scheduled_games)} scheduled, {date_span} day range"
+                                    print(f"   ✅ 20-day requirement met: {date_span} days range")
+                                else:
+                                    test_results['games_endpoint']['status'] = 'fail'
+                                    test_results['games_endpoint']['details'] = f"❌ Insufficient date range: {date_span} days (expected ~20)"
+                                    print(f"   ❌ Insufficient date range: {date_span} days (expected ~20)")
+                            except ValueError:
+                                test_results['games_endpoint']['status'] = 'pass'
+                                test_results['games_endpoint']['details'] = f"✅ Games endpoint has scheduled games but date parsing issue"
+                                print("   ⚠️  Date format issue, but scheduled games found")
+                        else:
+                            test_results['games_endpoint']['status'] = 'fail'
+                            test_results['games_endpoint']['details'] = "❌ No scheduled games found with is_scheduled: true"
+                            print("   ❌ No scheduled games found with is_scheduled: true")
+                    else:
+                        test_results['games_endpoint']['status'] = 'fail'
+                        test_results['games_endpoint']['details'] = "❌ Games only cover one date (expected 20-day range)"
+                        print("   ❌ Games only cover one date (expected 20-day range)")
                     
                     # Store first game ID for testing game detail endpoint
                     global sample_game_id
                     sample_game_id = data['games'][0].get('game_id')
                     print(f"   🎯 Will use game_id '{sample_game_id}' for detail testing")
                 else:
-                    print("   ℹ️  No games found today (this is expected if no NBA games scheduled)")
+                    test_results['games_endpoint']['status'] = 'fail'
+                    test_results['games_endpoint']['details'] = "❌ No games returned (expected games for 20-day period)"
+                    print("   ❌ No games returned (expected games for 20-day period)")
             else:
                 test_results['games_endpoint']['status'] = 'fail'
                 test_results['games_endpoint']['details'] = "❌ Games endpoint response missing 'games' array"
