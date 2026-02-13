@@ -410,7 +410,8 @@ async def health_check():
 
 @app.get("/api/games")
 async def get_games():
-    games = get_today_games()
+    """Get all games including future scheduled games up to 20 days"""
+    games = get_scheduled_games(days=20)
     return {"games": games}
 
 @app.get("/api/game/{game_id}")
