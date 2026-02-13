@@ -473,8 +473,10 @@ async def get_games():
 async def get_game(game_id: str):
     events, actions = get_game_events(game_id)
     players, team_map = get_players_in_game(game_id)
-    games = get_today_games()
-    game_info = next((g for g in games if g['game_id'] == game_id), {})
+    
+    # Look for game info in both today's games and scheduled games
+    all_games = get_scheduled_games(days=20)
+    game_info = next((g for g in all_games if g['game_id'] == game_id), {})
     
     return {
         "game_id": game_id,
@@ -485,7 +487,10 @@ async def get_game(game_id: str):
         "home_team": game_info.get('home_team', ''),
         "away_team": game_info.get('away_team', ''),
         "home_logo": game_info.get('home_logo', ''),
-        "away_logo": game_info.get('away_logo', '')
+        "away_logo": game_info.get('away_logo', ''),
+        "is_scheduled": game_info.get('is_scheduled', False),
+        "is_live": game_info.get('is_live', False),
+        "status": game_info.get('status', '')
     }
 
 @app.get("/api/logos")
