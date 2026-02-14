@@ -618,99 +618,113 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   gameCard: {
-    marginBottom: 12,
-    borderRadius: 16,
+    marginBottom: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
   },
   cardGradient: {
-    padding: 16,
-    borderRadius: 16,
+    padding: 20,
+    borderRadius: 20,
   },
-  cardHeader: {
-    marginBottom: 12,
+  statusContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 8,
   },
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#fff',
   },
   liveText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   scheduledBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   scheduledText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#64748b',
   },
-  teamRow: {
+  matchupContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    justifyContent: 'space-between',
   },
-  teamLogoSmall: {
-    width: 40,
-    height: 40,
-    marginRight: 12,
+  teamSection: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  placeholderLogoSmall: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  teamLogo: {
+    width: 50,
+    height: 50,
+  },
+  placeholderLogo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  placeholderTextSmall: {
+  placeholderText: {
     fontSize: 12,
     fontWeight: '800',
     color: '#fff',
   },
-  teamName: {
-    flex: 1,
+  teamInfo: {
+    marginLeft: 10,
+  },
+  teamCode: {
     fontSize: 16,
     fontWeight: '700',
     color: '#374151',
+    marginBottom: 2,
   },
-  teamNameLight: {
+  teamCodeLight: {
     color: 'rgba(255,255,255,0.9)',
   },
-  teamScoreCompact: {
-    fontSize: 24,
+  teamScore: {
+    fontSize: 28,
     fontWeight: '800',
     color: '#667eea',
-    minWidth: 50,
-    textAlign: 'right',
   },
-  teamScoreCompactLight: {
+  teamScoreLight: {
     color: '#fff',
+  },
+  vsContainer: {
+    paddingHorizontal: 16,
+  },
+  vsText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9ca3af',
+  },
+  vsTextLight: {
+    color: 'rgba(255,255,255,0.5)',
   },
   dateFilterContainer: {
     marginTop: 16,
