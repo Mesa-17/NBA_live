@@ -218,38 +218,6 @@ def get_scheduled_games(days=20):
     except Exception as e:
         print(f"❌ Error fetching scheduled games: {e}")
         return get_today_games()
-                            status_display = status_text or "LIVE"
-                        else:
-                            status_display = "Final"
-                        
-                        all_games.append({
-                            "label": f"{away_team} vs {home_team}",
-                            "game_id": game.get('gameId', f"future_{date_str}_{len(all_games)}"),
-                            "status": status_display,
-                            "home_score": home_team_data.get('score', 0),
-                            "away_score": away_team_data.get('score', 0),
-                            "home_team": home_team,
-                            "away_team": away_team,
-                            "home_logo": nba_logos.get(home_team, ""),
-                            "away_logo": nba_logos.get(away_team, ""),
-                            "game_date": date_str,
-                            "is_today": False,
-                            "is_scheduled": game_status == 1,
-                            "is_live": is_live
-                        })
-                
-                print(f"✅ Loaded {len(all_games)} games from NBA schedule")
-                return all_games
-                
-        except Exception as e:
-            print(f"⚠️ Could not fetch NBA schedule: {e}")
-        
-        # Fallback: return only today's games if schedule fetch fails
-        return today_games
-        
-    except Exception as e:
-        print(f"❌ Error fetching scheduled games: {e}")
-        return get_today_games()
 
 def get_players_in_game(game_id):
     """Fetch players in a game"""
