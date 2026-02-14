@@ -138,10 +138,6 @@ def get_scheduled_games(days=20):
         
         # Fetch real NBA schedule from official endpoint
         try:
-            # Get current season year (NBA season spans two years)
-            current_year = today.year
-            season_year = current_year if today.month >= 10 else current_year
-            
             schedule_url = f"https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json"
             response = requests.get(schedule_url, timeout=10, headers={
                 'User-Agent': 'Mozilla/5.0',
@@ -153,25 +149,9 @@ def get_scheduled_games(days=20):
                 schedule_data = response.json()
                 game_dates = schedule_data.get('leagueSchedule', {}).get('gameDates', [])
                 
-                today_str = today.strftime("%m/%d/%Y")
                 end_date = today + timedelta(days=days)
                 
                 for game_date_entry in game_dates:
-                    game_date_str = game_date_entry.get('gameDate', '')
-                    
-                    # Parse the date (format: "01/15/2026 00:00:00")
-                    try:
-                        game_date = datetime.strptime(game_date_str.split(' ')[0], "%m/%d/%Y")
-                    except:
-                        continue
-                    
-                    # Only include future games within our range
-                    if game_date.date() <= today.date() or game_date > end_date:
-                        continue
-                    
-                    date_str = game_date.strftime("%Y-%m-%d")
-                    display_date = game_date.strftime("%b %d")
-                    
                     for game in game_date_entry.get('games', []):
                         home_team_data = game.get('homeTeam', {})
                         away_team_data = game.get('awayTeam', {})
@@ -179,15 +159,23 @@ def get_scheduled_games(days=20):
                         home_team = home_team_data.get('teamTricode', '')
                         away_team = away_team_data.get('teamTricode', '')
                         
-                        # Get game time
+                        # Get game time and use it for the actual date
                         game_time_utc = game.get('gameDateTimeUTC', '')
                         try:
                             game_dt = datetime.strptime(game_time_utc, "%Y-%m-%dT%H:%M:%SZ")
                             # Convert to ET (UTC-5)
                             game_dt_et = game_dt - timedelta(hours=5)
                             time_str = game_dt_et.strftime("%I:%M %p ET").lstrip('0')
+                            # Use the ET date as the game date
+                            date_str = game_dt_et.strftime("%Y-%m-%d")
+                            display_date = game_dt_et.strftime("%b %d")
                         except:
                             time_str = "TBD"
+                            continue  # Skip if we can't parse the date
+                        
+                        # Only include future games within our range
+                        if game_dt_et.date() <= today.date() or game_dt_et > end_date:
+                            continue
                         
                         game_status = game.get('gameStatus', 1)
                         status_text = game.get('gameStatusText', '')
@@ -198,6 +186,38 @@ def get_scheduled_games(days=20):
                         if game_status == 1:
                             status_display = f"{display_date} • {time_str}"
                         elif game_status == 2:
+                            status_display = status_text or "LIVE"
+                        else:
+                            status_display = "Final"
+                        
+                        all_games.append({
+                            "label": f"{away_team} vs {home_team}",
+                            "game_id": game.get('gameId', f"future_{date_str}_{len(all_games)}"),
+                            "status": status_display,
+                            "home_score": home_team_data.get('score', 0),
+                            "away_score": away_team_data.get('score', 0),
+                            "home_team": home_team,
+                            "away_team": away_team,
+                            "home_logo": nba_logos.get(home_team, ""),
+                            "away_logo": nba_logos.get(away_team, ""),
+                            "game_date": date_str,
+                            "is_today": False,
+                            "is_scheduled": game_status == 1,
+                            "is_live": is_live
+                        })
+                
+                print(f"✅ Loaded {len(all_games)} games from NBA schedule")
+                return all_games
+                
+        except Exception as e:
+            print(f"⚠️ Could not fetch NBA schedule: {e}")
+        
+        # Fallback: return only today's games if schedule fetch fails
+        return today_games
+        
+    except Exception as e:
+        print(f"❌ Error fetching scheduled games: {e}")
+        return get_today_games()
                             status_display = status_text or "LIVE"
                         else:
                             status_display = "Final"
