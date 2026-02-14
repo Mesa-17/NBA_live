@@ -204,8 +204,8 @@ export default function GamesScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          {/* Header Row - Live Badge or Status */}
-          <View style={styles.cardHeader}>
+          {/* Live Badge or Status at top center */}
+          <View style={styles.statusContainer}>
             {isLive ? (
               <LinearGradient
                 colors={['#ef4444', '#dc2626']}
@@ -224,40 +224,52 @@ export default function GamesScreen() {
             )}
           </View>
 
-          {/* Away Team Row */}
-          <View style={styles.teamRow}>
-            {game.away_logo ? (
-              <Image source={{ uri: game.away_logo }} style={styles.teamLogoSmall} resizeMode="contain" />
-            ) : (
-              <LinearGradient
-                colors={['#667eea', '#764ba2']}
-                style={styles.placeholderLogoSmall}
-              >
-                <Text style={styles.placeholderTextSmall}>{game.away_team?.substring(0, 3) || '?'}</Text>
-              </LinearGradient>
-            )}
-            <Text style={[styles.teamName, isLive && styles.teamNameLight]}>{game.away_team || 'TBD'}</Text>
-            <Text style={[styles.teamScoreCompact, isLive && styles.teamScoreCompactLight]}>
-              {isLive || game.away_score > 0 ? game.away_score : '-'}
-            </Text>
-          </View>
+          {/* Matchup Row: Away VS Home */}
+          <View style={styles.matchupContainer}>
+            {/* Away Team */}
+            <View style={styles.teamSection}>
+              {game.away_logo ? (
+                <Image source={{ uri: game.away_logo }} style={styles.teamLogo} resizeMode="contain" />
+              ) : (
+                <LinearGradient
+                  colors={['#667eea', '#764ba2']}
+                  style={styles.placeholderLogo}
+                >
+                  <Text style={styles.placeholderText}>{game.away_team?.substring(0, 3) || '?'}</Text>
+                </LinearGradient>
+              )}
+              <View style={styles.teamInfo}>
+                <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.away_team || 'TBD'}</Text>
+                <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>
+                  {isLive || game.away_score > 0 ? game.away_score : '-'}
+                </Text>
+              </View>
+            </View>
 
-          {/* Home Team Row */}
-          <View style={styles.teamRow}>
-            {game.home_logo ? (
-              <Image source={{ uri: game.home_logo }} style={styles.teamLogoSmall} resizeMode="contain" />
-            ) : (
-              <LinearGradient
-                colors={['#667eea', '#764ba2']}
-                style={styles.placeholderLogoSmall}
-              >
-                <Text style={styles.placeholderTextSmall}>{game.home_team?.substring(0, 3) || '?'}</Text>
-              </LinearGradient>
-            )}
-            <Text style={[styles.teamName, isLive && styles.teamNameLight]}>{game.home_team || 'TBD'}</Text>
-            <Text style={[styles.teamScoreCompact, isLive && styles.teamScoreCompactLight]}>
-              {isLive || game.home_score > 0 ? game.home_score : '-'}
-            </Text>
+            {/* VS */}
+            <View style={styles.vsContainer}>
+              <Text style={[styles.vsText, isLive && styles.vsTextLight]}>VS</Text>
+            </View>
+
+            {/* Home Team */}
+            <View style={styles.teamSection}>
+              {game.home_logo ? (
+                <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
+              ) : (
+                <LinearGradient
+                  colors={['#667eea', '#764ba2']}
+                  style={styles.placeholderLogo}
+                >
+                  <Text style={styles.placeholderText}>{game.home_team?.substring(0, 3) || '?'}</Text>
+                </LinearGradient>
+              )}
+              <View style={styles.teamInfo}>
+                <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.home_team || 'TBD'}</Text>
+                <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>
+                  {isLive || game.home_score > 0 ? game.home_score : '-'}
+                </Text>
+              </View>
+            </View>
           </View>
         </LinearGradient>
       </TouchableOpacity>
