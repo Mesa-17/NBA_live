@@ -51,21 +51,35 @@ export default function GamesScreen() {
     setPushToken,
   } = useTrackerStore();
 
+  // Cached date filters - once we see dates, we keep them
+  const cachedDatesRef = useRef<Set<string>>(new Set());
+  const cachedCountsRef = useRef<Map<string, number>>(new Map());
+  
   // Get unique dates from games and create filter options
   const dateFilters = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const dates = new Set<string>();
-    dates.add(today); // Always include today
+    cachedDatesRef.current.add(today); // Always include today
     
     games.forEach(game => {
       if (game.game_date) {
-        dates.add(game.game_date);
+        cachedDatesRef.current.add(game.game_date);
+        // Update counts - only increase, never decrease (to prevent flicker)
+        const currentCount = cachedCountsRef.current.get(game.game_date) || 0;
+        const newCount = games.filter(g => g.game_date === game.game_date).length;
+        if (newCount > currentCount) {
+          cachedCountsRef.current.set(game.game_date, newCount);
+        }
       }
     });
     
-    const sortedDates = Array.from(dates).sort();
+    const sortedDates = Array.from(cachedDatesRef.current).sort();
     return sortedDates.slice(0, 10); // Show max 10 date options
   }, [games]);
+  
+  // Helper to get game count for a date
+  const getGameCount = (date: string) => {
+    return cachedCountsRef.current.get(date) || games.filter(g => g.game_date === date).length;
+  };
 
   // Filter games by selected date
   const filteredGames = useMemo(() => {
@@ -118,11 +132,39 @@ export default function GamesScreen() {
     }
   };
 
+  // Reference to track if this is the initial load
+  const isInitialLoad = useRef(true);
+  const lastGamesHash = useRef('');
+
   const fetchGames = async () => {
     try {
       const response = await fetch(`${API_URL}/api/games`);
       const data = await response.json();
-      setGames(data.games || []);
+      const newGames = data.games || [];
+      
+      // Create a simple hash to check if data changed (based on scores)
+      const newHash = newGames.map((g: any) => `${g.game_id}:${g.home_score}:${g.away_score}:${g.status}`).join('|');
+      
+      // Only update state if the data actually changed or it's the initial load
+      if (isInitialLoad.current || newHash !== lastGamesHash.current) {
+        // Preserve game order by merging updates instead of replacing
+        if (!isInitialLoad.current && games.length > 0) {
+          // Update existing games in place to avoid re-ordering
+          const updatedGames = games.map(existingGame => {
+            const newGame = newGames.find((g: any) => g.game_id === existingGame.game_id);
+            return newGame || existingGame;
+          });
+          // Add any new games that weren't in the old list
+          const existingIds = new Set(games.map((g: any) => g.game_id));
+          const brandNewGames = newGames.filter((g: any) => !existingIds.has(g.game_id));
+          setGames([...updatedGames, ...brandNewGames]);
+        } else {
+          setGames(newGames);
+        }
+        lastGamesHash.current = newHash;
+        isInitialLoad.current = false;
+      }
+      
       setLoading(false);
       setConnected(true);
     } catch (error) {
@@ -220,8 +262,14 @@ export default function GamesScreen() {
               <Text style={[styles.vsText, isLive && styles.vsTextLight]}>VS</Text>
             </View>
 
-            {/* Home Team */}
-            <View style={styles.teamSection}>
+            {/* Home Team - Logo on right */}
+            <View style={styles.teamSectionRight}>
+              <View style={styles.teamInfo}>
+                <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.home_team || 'TBD'}</Text>
+                <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>
+                  {isLive || game.home_score > 0 ? game.home_score : '-'}
+                </Text>
+              </View>
               {game.home_logo ? (
                 <Image source={{ uri: game.home_logo }} style={styles.teamLogo} resizeMode="contain" />
               ) : (
@@ -232,12 +280,6 @@ export default function GamesScreen() {
                   <Text style={styles.placeholderText}>{game.home_team?.substring(0, 3) || '?'}</Text>
                 </LinearGradient>
               )}
-              <View style={styles.teamInfo}>
-                <Text style={[styles.teamCode, isLive && styles.teamCodeLight]}>{game.home_team || 'TBD'}</Text>
-                <Text style={[styles.teamScore, isLive && styles.teamScoreLight]}>
-                  {isLive || game.home_score > 0 ? game.home_score : '-'}
-                </Text>
-              </View>
             </View>
           </View>
         </LinearGradient>
@@ -312,7 +354,7 @@ export default function GamesScreen() {
             const today = new Date().toISOString().split('T')[0];
             const isSelected = (selectedDate === 'today' && date === today) || selectedDate === date;
             const label = formatDateLabel(date);
-            const gamesOnDate = games.filter(g => g.game_date === date).length;
+            const gamesOnDate = getGameCount(date);
             
             return (
               <TouchableOpacity
@@ -627,6 +669,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  teamSectionRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
   teamLogo: {
     width: 50,
     height: 50,
@@ -644,7 +692,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   teamInfo: {
-    marginLeft: 10,
+    marginHorizontal: 10,
   },
   teamCode: {
     fontSize: 16,

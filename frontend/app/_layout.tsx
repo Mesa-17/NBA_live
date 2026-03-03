@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AppState, AppStateStatus } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
@@ -13,26 +14,30 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.prev
 
 function AppContent() {
   const socketRef = useRef<Socket | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const { setConnected, handleNewScore, handlePlayerAction, setGames, trackedPlayers } = useTrackerStore();
 
-  useEffect(() => {
-    // Connect to socket for real-time notifications - persists across all screens
+  // Function to connect socket
+  const connectSocket = () => {
+    if (socketRef.current?.connected) return;
+    
     const socketUrl = API_URL;
-    console.log('🔌 Root layout connecting socket to:', socketUrl);
+    console.log('🔌 Connecting socket to:', socketUrl);
     
     const socket = io(socketUrl, {
-      transports: ['polling'],  // Use polling only due to K8s ingress limitations
+      transports: ['polling'],
       path: '/api/socket.io',
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
       forceNew: true,
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ Socket connected in root layout, ID:', socket.id);
+      console.log('✅ Socket connected, ID:', socket.id);
       setConnected(true);
     });
 
@@ -45,10 +50,8 @@ function AppContent() {
       setConnected(false);
     });
 
-    // Listen for real-time score events - works on ALL pages
     socket.on('new_score', (data) => {
       console.log('🏀 ROOT: Received new_score event:', data.player_name, data.total_points, 'PTS');
-      console.log('🎯 Currently tracked players:', trackedPlayers);
       handleNewScore(data);
     });
 
@@ -61,9 +64,30 @@ function AppContent() {
         setGames(data.games);
       }
     });
+  };
+
+  useEffect(() => {
+    // Initial socket connection
+    connectSocket();
+
+    // Handle app state changes (foreground/background)
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      console.log('📱 App state changed:', appStateRef.current, '->', nextAppState);
+      
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App came to foreground - reconnect socket if needed
+        console.log('📱 App came to foreground, reconnecting socket...');
+        if (!socketRef.current?.connected) {
+          connectSocket();
+        }
+      }
+      
+      appStateRef.current = nextAppState;
+    });
 
     return () => {
       console.log('🔌 Cleaning up socket connection');
+      subscription.remove();
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
