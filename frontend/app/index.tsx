@@ -19,24 +19,20 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
-import { io, Socket } from 'socket.io-client';
 import { useTrackerStore } from './store/trackerStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
 
-// Helper to format date for display
+// Helper to format date for display - "Today" for current day, date for others
 const formatDateLabel = (dateStr: string) => {
-  const date = new Date(dateStr);
+  const date = new Date(dateStr + 'T12:00:00'); // Add time to avoid timezone issues
   const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const todayStr = today.toISOString().split('T')[0];
   
-  if (dateStr === today.toISOString().split('T')[0]) {
+  if (dateStr === todayStr) {
     return 'Today';
-  } else if (dateStr === tomorrow.toISOString().split('T')[0]) {
-    return 'Tomorrow';
   } else {
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 };
 
@@ -53,11 +49,7 @@ export default function GamesScreen() {
     setConnected,
     setGames,
     setPushToken,
-    handleNewScore,
-    handlePlayerAction,
   } = useTrackerStore();
-  
-  const socketRef = useRef<Socket | null>(null);
 
   // Get unique dates from games and create filter options
   const dateFilters = useMemo(() => {
@@ -143,41 +135,6 @@ export default function GamesScreen() {
     registerForPushNotifications();
     fetchGames();
     
-    // Connect to socket for real-time notifications
-    const socket = io(`${API_URL}`, {
-      transports: ['websocket', 'polling'],
-      path: '/socket.io',
-    });
-
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      console.log('Socket connected for notifications');
-      setConnected(true);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setConnected(false);
-    });
-
-    // Listen for real-time score events
-    socket.on('new_score', (data) => {
-      console.log('Received new_score event:', data);
-      handleNewScore(data);
-    });
-
-    socket.on('player_action', (data) => {
-      handlePlayerAction(data);
-    });
-
-    // Listen for game updates
-    socket.on('games_update', (data) => {
-      if (data.games) {
-        setGames(data.games);
-      }
-    });
-    
     // Real-time polling every 5 seconds for live updates
     const pollInterval = setInterval(() => {
       fetchGames();
@@ -185,9 +142,6 @@ export default function GamesScreen() {
 
     return () => {
       clearInterval(pollInterval);
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
     };
   }, []);
 

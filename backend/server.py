@@ -10,11 +10,11 @@ from datetime import datetime
 
 load_dotenv()
 
-# Initialize FastAPI app
-app = FastAPI(title="NBA Live Tracker API")
+# Initialize FastAPI app (internal - wrapped by socket.io)
+fastapi_app = FastAPI(title="NBA Live Tracker API")
 
 # Add CORS middleware
-app.add_middleware(
+fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -22,16 +22,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Socket.IO with correct path for kubernetes ingress
+# Initialize Socket.IO
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
     ping_timeout=60,
-    ping_interval=25
+    ping_interval=25,
 )
 
-# Wrap with ASGI app - socket.io path set for /api prefix routing
-socket_app = socketio.ASGIApp(sio, app, socketio_path='/socket.io')
+# Wrap with ASGI app - 'app' is what uvicorn runs via supervisord
+# socketio_path must start with / for proper routing
+app = socketio.ASGIApp(sio, fastapi_app, socketio_path='/api/socket.io')
 
 # MongoDB connection
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
@@ -447,17 +448,17 @@ async def request_game_data(sid, data):
         }, to=sid)
 
 # REST API Endpoints
-@app.get("/api/health")
+@fastapi_app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "message": "🏀 NBA Live Tracker API is running!"}
 
-@app.get("/api/games")
+@fastapi_app.get("/api/games")
 async def get_games():
     """Get all games including future scheduled games up to 20 days"""
     games = get_scheduled_games(days=20)
     return {"games": games}
 
-@app.get("/api/game/{game_id}")
+@fastapi_app.get("/api/game/{game_id}")
 async def get_game(game_id: str):
     events, actions = get_game_events(game_id)
     players, team_map = get_players_in_game(game_id)
@@ -481,12 +482,12 @@ async def get_game(game_id: str):
         "status": game_info.get('status', '')
     }
 
-@app.get("/api/logos")
+@fastapi_app.get("/api/logos")
 async def get_logos():
     return nba_logos
 
 # Start background task when app starts
-@app.on_event("startup")
+@fastapi_app.on_event("startup")
 async def startup_event():
     print("🚀 Starting NBA Live Tracker Server...")
     games = get_today_games()
