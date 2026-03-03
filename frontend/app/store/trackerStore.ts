@@ -147,10 +147,26 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     const homeTeam = data.home_team || '';
     const awayTeam = data.away_team || '';
     
-    if (!playerName || !state.trackedPlayers.includes(playerName)) return;
+    console.log(`📊 handleNewScore: ${playerName} (${totalPoints} pts)`);
+    console.log(`📊 Tracked players: [${state.trackedPlayers.join(', ')}]`);
+    
+    if (!playerName) {
+      console.log('❌ No player name, skipping');
+      return;
+    }
+    
+    if (!state.trackedPlayers.includes(playerName)) {
+      console.log(`❌ ${playerName} is not tracked, skipping notification`);
+      return;
+    }
     
     const actionId = `${data.game_id}_${data.action_id}`;
-    if (state.notifiedActions.has(actionId)) return;
+    if (state.notifiedActions.has(actionId)) {
+      console.log(`❌ Action ${actionId} already notified, skipping`);
+      return;
+    }
+    
+    console.log(`✅ ${playerName} IS tracked! Sending notification...`);
     
     // Update points from backend data
     if (totalPoints > 0) {

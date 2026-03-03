@@ -15,7 +15,7 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.prev
 function AppContent() {
   const socketRef = useRef<Socket | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const { setConnected, handleNewScore, handlePlayerAction, setGames, trackedPlayers } = useTrackerStore();
+  const { setConnected, handleNewScore, handlePlayerAction, setGames } = useTrackerStore();
 
   // Function to connect socket
   const connectSocket = () => {
@@ -51,7 +51,10 @@ function AppContent() {
     });
 
     socket.on('new_score', (data) => {
-      console.log('🏀 ROOT: Received new_score event:', data.player_name, data.total_points, 'PTS');
+      // Get fresh state to check tracked players
+      const currentState = useTrackerStore.getState();
+      console.log('🏀 Score event:', data.player_name, data.total_points, 'PTS');
+      console.log('🎯 Tracked players:', currentState.trackedPlayers);
       handleNewScore(data);
     });
 
