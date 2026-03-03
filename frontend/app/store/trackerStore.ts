@@ -46,15 +46,29 @@ Notifications.setNotificationHandler({
 });
 
 async function sendPushNotification(title: string, body: string) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      sound: true,
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-    },
-    trigger: null, // Send immediately
-  });
+  try {
+    // Request permissions first
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+      if (newStatus !== 'granted') {
+        console.log('Notification permission not granted');
+        return;
+      }
+    }
+    
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: null, // Send immediately
+    });
+  } catch (error) {
+    console.log('Push notification error:', error);
+  }
 }
 
 export const useTrackerStore = create<TrackerStore>((set, get) => ({

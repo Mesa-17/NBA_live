@@ -19,6 +19,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
+import { io, Socket } from 'socket.io-client';
 import { useTrackerStore } from './store/trackerStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
@@ -52,7 +53,11 @@ export default function GamesScreen() {
     setConnected,
     setGames,
     setPushToken,
+    handleNewScore,
+    handlePlayerAction,
   } = useTrackerStore();
+  
+  const socketRef = useRef<Socket | null>(null);
 
   // Get unique dates from games and create filter options
   const dateFilters = useMemo(() => {
@@ -138,48 +143,58 @@ export default function GamesScreen() {
     registerForPushNotifications();
     fetchGames();
     
+    // Connect to socket for real-time notifications
+    const socket = io(`${API_URL}`, {
+      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Socket connected for notifications');
+      setConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setConnected(false);
+    });
+
+    // Listen for real-time score events
+    socket.on('new_score', (data) => {
+      console.log('Received new_score event:', data);
+      handleNewScore(data);
+    });
+
+    socket.on('player_action', (data) => {
+      handlePlayerAction(data);
+    });
+
+    // Listen for game updates
+    socket.on('games_update', (data) => {
+      if (data.games) {
+        setGames(data.games);
+      }
+    });
+    
     // Real-time polling every 5 seconds for live updates
     const pollInterval = setInterval(() => {
       fetchGames();
     }, 5000);
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      clearInterval(pollInterval);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchGames();
     setRefreshing(false);
-  };
-
-  // Demo notification function
-  const showDemoNotification = async () => {
-    // Show in-app toast with new format
-    Toast.show({
-      type: 'success',
-      text1: '🏀 LeBron James Scores 3-pointer (25 pts)',
-      text2: 'Q1 - 04:00 | Lakers lead 78-72 vs Celtics',
-      position: 'top',
-      visibilityTime: 4000,
-      topOffset: 60,
-    });
-
-    // Schedule push notification (only on native devices)
-    try {
-      if (Device.isDevice) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🏀 LeBron James Scores 3-pointer (25 pts)',
-            body: 'Q1 - 04:00 | Lakers lead 78-72 vs Celtics',
-            sound: true,
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-          },
-          trigger: { seconds: 2 },
-        });
-      }
-    } catch (error) {
-      console.log('Push notification not available:', error);
-    }
   };
 
   const handleGamePress = (gameId: string) => {
@@ -292,13 +307,6 @@ export default function GamesScreen() {
               <Text style={styles.headerSubtitle}>Real-time scores & player tracking</Text>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity 
-                style={styles.demoButton}
-                onPress={showDemoNotification}
-              >
-                <Ionicons name="notifications" size={18} color="#667eea" />
-                <Text style={styles.demoButtonText}>Demo</Text>
-              </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.trackingButton}
                 onPress={() => router.push('/tracked')}
@@ -459,20 +467,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  demoButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#667eea',
   },
   trackingButton: {
     width: 44,
