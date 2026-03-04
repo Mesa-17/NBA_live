@@ -118,7 +118,7 @@ export default function GameDetailScreen() {
     setRefreshing(false);
   };
 
-  const handleTrackPlayer = (player: string) => {
+  const handleTrackPlayer = (player: string, apiStats?: any) => {
     if (trackedPlayers.includes(player)) {
       removeTrackedPlayer(player);
       Toast.show({
@@ -129,13 +129,28 @@ export default function GameDetailScreen() {
         visibilityTime: 2000,
       });
     } else {
-      const events = currentGameData?.all_events || currentGameData?.events || [];
-      const { stats, subStatus } = calculateInitialStats(player, events);
+      // Use API stats if available, otherwise calculate from events
+      let stats = { pts: 0, reb: 0, ast: 0 };
+      let subStatus: 'in' | 'out' = 'in';
+      
+      if (apiStats) {
+        stats = { 
+          pts: apiStats.pts || 0, 
+          reb: apiStats.reb || 0, 
+          ast: apiStats.ast || 0 
+        };
+      } else {
+        const events = currentGameData?.all_events || currentGameData?.events || [];
+        const calculated = calculateInitialStats(player, events);
+        stats = calculated.stats;
+        subStatus = calculated.subStatus;
+      }
+      
       addTrackedPlayer(player, stats, subStatus);
       Toast.show({
         type: 'success',
-        text1: '\ud83d\udd14 Player Tracked!',
-        text2: `You\'ll get notifications when ${player} scores`,
+        text1: '🔔 Player Tracked!',
+        text2: `You'll get notifications when ${player} scores`,
         position: 'top',
         visibilityTime: 2000,
       });
@@ -181,6 +196,7 @@ export default function GameDetailScreen() {
   const renderPlayers = () => {
     const players = currentGameData?.players || [];
     const teamMap = currentGameData?.team_map || {};
+    const apiPlayerStats = currentGameData?.player_stats || {};
     const homeTeam = currentGameData?.home_team || '';
     const awayTeam = currentGameData?.away_team || '';
 
@@ -201,29 +217,39 @@ export default function GameDetailScreen() {
 
     const renderPlayerRow = (player: string) => {
       const isTracked = trackedPlayers.includes(player);
-      const stats = playerStats[player];
+      // Get stats from API first, then fall back to store stats for real-time updates
+      const apiStats = apiPlayerStats[player];
+      const storeStats = playerStats[player];
+      const stats = storeStats || apiStats;
 
       return (
         <TouchableOpacity 
           key={player} 
           style={styles.playerRow}
-          onPress={() => handleTrackPlayer(player)}
+          onPress={() => handleTrackPlayer(player, apiStats)}
           activeOpacity={0.7}
         >
           <View style={styles.playerInfo}>
             <Text style={styles.playerName}>{player}</Text>
-            {isTracked && stats && (
-              <View style={styles.playerStatsRow}>
+            {/* Always show stats from API, highlighted if tracked */}
+            {apiStats && (
+              <View style={[styles.playerStatsRow, isTracked && styles.playerStatsRowTracked]}>
                 <View style={styles.miniStat}>
-                  <Text style={styles.miniStatValue}>{stats.pts}</Text>
+                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                    {stats?.pts || apiStats.pts || 0}
+                  </Text>
                   <Text style={styles.miniStatLabel}>PTS</Text>
                 </View>
                 <View style={styles.miniStat}>
-                  <Text style={styles.miniStatValue}>{stats.reb}</Text>
+                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                    {stats?.reb || apiStats.reb || 0}
+                  </Text>
                   <Text style={styles.miniStatLabel}>REB</Text>
                 </View>
                 <View style={styles.miniStat}>
-                  <Text style={styles.miniStatValue}>{stats.ast}</Text>
+                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                    {stats?.ast || apiStats.ast || 0}
+                  </Text>
                   <Text style={styles.miniStatLabel}>AST</Text>
                 </View>
               </View>
@@ -571,6 +597,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 16,
   },
+  playerStatsRowTracked: {
+    backgroundColor: '#f0f4ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 8,
+  },
   miniStat: {
     alignItems: 'center',
   },
@@ -578,6 +611,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#667eea',
+  },
+  miniStatValueTracked: {
+    color: '#764ba2',
+    fontSize: 18,
   },
   miniStatLabel: {
     fontSize: 10,

@@ -221,15 +221,16 @@ def get_scheduled_games(days=20):
         return get_today_games()
 
 def get_players_in_game(game_id):
-    """Fetch players in a game"""
+    """Fetch players in a game with their stats"""
     try:
         from nba_api.live.nba.endpoints import boxscore
         bs = boxscore.BoxScore(game_id=game_id).get_dict()
         if "game" not in bs or not bs["game"]:
-            return [], {}
+            return [], {}, {}
 
         players = []
         team_map = {}
+        player_stats = {}
 
         for team_key in ['homeTeam', 'awayTeam']:
             team_name = bs['game'][team_key]['teamTricode']
@@ -237,11 +238,28 @@ def get_players_in_game(game_id):
                 full_name = player['name']
                 players.append(full_name)
                 team_map[full_name] = team_name
+                
+                # Extract player stats from boxscore
+                stats = player.get('statistics', {})
+                player_stats[full_name] = {
+                    'pts': stats.get('points', 0),
+                    'reb': stats.get('reboundsTotal', 0),
+                    'ast': stats.get('assists', 0),
+                    'stl': stats.get('steals', 0),
+                    'blk': stats.get('blocks', 0),
+                    'min': stats.get('minutesCalculated', '0:00'),
+                    'fgm': stats.get('fieldGoalsMade', 0),
+                    'fga': stats.get('fieldGoalsAttempted', 0),
+                    'fg3m': stats.get('threePointersMade', 0),
+                    'fg3a': stats.get('threePointersAttempted', 0),
+                    'ftm': stats.get('freeThrowsMade', 0),
+                    'fta': stats.get('freeThrowsAttempted', 0),
+                }
 
-        return sorted(players), team_map
+        return sorted(players), team_map, player_stats
     except Exception as e:
         print(f"❌ Error fetching players for game {game_id}: {e}")
-        return [], {}
+        return [], {}, {}
 
 def get_game_events(game_id):
     """Fetch play-by-play events"""
@@ -291,7 +309,7 @@ async def background_nba_data():
             for game in games:
                 game_id = game['game_id']
                 events, actions = get_game_events(game_id)
-                players, team_map = get_players_in_game(game_id)
+                players, team_map, player_stats = get_players_in_game(game_id)
 
                 # Emit game data
                 await sio.emit('game_data', {
@@ -300,6 +318,7 @@ async def background_nba_data():
                     'all_events': events,
                     'players': players,
                     'team_map': team_map,
+                    'player_stats': player_stats,
                     'home_team': game['home_team'],
                     'away_team': game['away_team'],
                     'home_logo': game['home_logo'],
@@ -431,7 +450,7 @@ async def request_game_data(sid, data):
     game_id = data.get('game_id')
     if game_id:
         events, actions = get_game_events(game_id)
-        players, team_map = get_players_in_game(game_id)
+        players, team_map, player_stats = get_players_in_game(game_id)
         games = get_today_games()
         game_info = next((g for g in games if g['game_id'] == game_id), {})
         
@@ -441,6 +460,7 @@ async def request_game_data(sid, data):
             'all_events': events,
             'players': players,
             'team_map': team_map,
+            'player_stats': player_stats,
             'home_team': game_info.get('home_team', ''),
             'away_team': game_info.get('away_team', ''),
             'home_logo': game_info.get('home_logo', ''),
@@ -461,7 +481,7 @@ async def get_games():
 @fastapi_app.get("/api/game/{game_id}")
 async def get_game(game_id: str):
     events, actions = get_game_events(game_id)
-    players, team_map = get_players_in_game(game_id)
+    players, team_map, player_stats = get_players_in_game(game_id)
     
     # Look for game info in both today's games and scheduled games
     all_games = get_scheduled_games(days=20)
@@ -473,6 +493,7 @@ async def get_game(game_id: str):
         "all_events": events,
         "players": players,
         "team_map": team_map,
+        "player_stats": player_stats,
         "home_team": game_info.get('home_team', ''),
         "away_team": game_info.get('away_team', ''),
         "home_logo": game_info.get('home_logo', ''),
