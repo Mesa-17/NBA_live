@@ -95,6 +95,18 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
   addTrackedPlayer: (player, initialStats = { pts: 0, reb: 0, ast: 0 }, subStatus = 'in') => {
     set((state) => {
       if (state.trackedPlayers.includes(player)) return state;
+      
+      console.log(`🔔 Adding tracked player: ${player}`);
+      
+      // Show toast notification
+      Toast.show({
+        type: 'success',
+        text1: '🔔 Player Tracked!',
+        text2: `You'll get notifications when ${player} scores`,
+        position: 'top',
+        visibilityTime: 3000,
+        topOffset: 60,
+      });
       return {
         trackedPlayers: [...state.trackedPlayers, player],
         playerStats: { ...state.playerStats, [player]: initialStats },
@@ -155,6 +167,22 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
       return;
     }
     
+    // ALWAYS update player stats for any scoring player (even if not tracked)
+    if (totalPoints > 0) {
+      set((s) => ({
+        playerStats: {
+          ...s.playerStats,
+          [playerName]: { 
+            pts: totalPoints, 
+            reb: s.playerStats[playerName]?.reb || 0, 
+            ast: s.playerStats[playerName]?.ast || 0 
+          },
+        },
+      }));
+      console.log(`📈 Updated ${playerName} stats to ${totalPoints} PTS`);
+    }
+    
+    // Only send notification if player is tracked
     if (!state.trackedPlayers.includes(playerName)) {
       console.log(`❌ ${playerName} is not tracked, skipping notification`);
       return;
@@ -167,16 +195,6 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     }
     
     console.log(`✅ ${playerName} IS tracked! Sending notification...`);
-    
-    // Update points from backend data
-    if (totalPoints > 0) {
-      set((s) => ({
-        playerStats: {
-          ...s.playerStats,
-          [playerName]: { ...s.playerStats[playerName], pts: totalPoints },
-        },
-      }));
-    }
     
     // Determine score type
     let scoreType = '2-pointer';
@@ -292,8 +310,8 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
       }
     });
   },
-  
+    
   setPushToken: (token) => set({ pushToken: token }),
-  
+    
   isPlayerTracked: (player) => get().trackedPlayers.includes(player),
 }));
