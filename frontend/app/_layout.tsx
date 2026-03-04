@@ -103,7 +103,7 @@ function AppContent() {
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#667eea',
+            backgroundColor: '#1a1a2e',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
@@ -114,8 +114,7 @@ function AppContent() {
         <Stack.Screen 
           name="index" 
           options={{ 
-            title: 'NBA Live Tracker',
-            headerShown: true,
+            headerShown: false,
           }} 
         />
         <Stack.Screen 

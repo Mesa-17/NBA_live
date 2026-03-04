@@ -134,42 +134,38 @@ export default function GamesScreen() {
 
   // Reference to track if this is the initial load
   const isInitialLoad = useRef(true);
-  const lastGamesHash = useRef('');
+  const lastGamesJson = useRef('');
 
-  const fetchGames = async () => {
+  const fetchGames = async (silentRefresh = false) => {
     try {
       const response = await fetch(`${API_URL}/api/games`);
       const data = await response.json();
       const newGames = data.games || [];
       
-      // Create a simple hash to check if data changed (based on scores)
-      const newHash = newGames.map((g: any) => `${g.game_id}:${g.home_score}:${g.away_score}:${g.status}`).join('|');
+      // Create a JSON string to compare (just IDs and scores for efficiency)
+      const newGamesJson = JSON.stringify(newGames.map((g: any) => ({
+        id: g.game_id,
+        hs: g.home_score,
+        as: g.away_score,
+        st: g.status
+      })));
       
-      // Only update state if the data actually changed or it's the initial load
-      if (isInitialLoad.current || newHash !== lastGamesHash.current) {
-        // Preserve game order by merging updates instead of replacing
-        if (!isInitialLoad.current && games.length > 0) {
-          // Update existing games in place to avoid re-ordering
-          const updatedGames = games.map(existingGame => {
-            const newGame = newGames.find((g: any) => g.game_id === existingGame.game_id);
-            return newGame || existingGame;
-          });
-          // Add any new games that weren't in the old list
-          const existingIds = new Set(games.map((g: any) => g.game_id));
-          const brandNewGames = newGames.filter((g: any) => !existingIds.has(g.game_id));
-          setGames([...updatedGames, ...brandNewGames]);
-        } else {
-          setGames(newGames);
-        }
-        lastGamesHash.current = newHash;
+      // Only update state if the data actually changed
+      if (isInitialLoad.current || newGamesJson !== lastGamesJson.current) {
+        setGames(newGames);
+        lastGamesJson.current = newGamesJson;
         isInitialLoad.current = false;
       }
       
-      setLoading(false);
+      if (!silentRefresh) {
+        setLoading(false);
+      }
       setConnected(true);
     } catch (error) {
       console.log('Error fetching games:', error);
-      setLoading(false);
+      if (!silentRefresh) {
+        setLoading(false);
+      }
     }
   };
 
@@ -177,9 +173,9 @@ export default function GamesScreen() {
     registerForPushNotifications();
     fetchGames();
     
-    // Real-time polling every 5 seconds for live updates
+    // Real-time polling every 5 seconds for live updates (silent - no re-render if no change)
     const pollInterval = setInterval(() => {
-      fetchGames();
+      fetchGames(true); // silent refresh
     }, 5000);
 
     return () => {
@@ -318,24 +314,6 @@ export default function GamesScreen() {
                   </View>
                 )}
               </TouchableOpacity>
-            </View>
-
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{filteredGames.filter(g => g.is_live || g.status?.includes('Q') || g.status?.includes('Half')).length}</Text>
-                <Text style={styles.statLabel}>Live Now</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{filteredGames.length}</Text>
-                <Text style={styles.statLabel}>Games Today</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{trackedPlayers.length}</Text>
-                <Text style={styles.statLabel}>Tracking</Text>
-              </View>
             </View>
 
             {/* Connection Status */}
@@ -516,32 +494,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 8,
   },
   connectionPill: {
     flexDirection: 'row',
