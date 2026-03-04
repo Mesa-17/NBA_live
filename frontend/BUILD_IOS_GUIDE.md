@@ -1,117 +1,48 @@
-# Building NBA Live Tracker for iOS (Real Push Notifications)
+# Building NBA Live Tracker for iOS
 
-## Why You Need a Development Build
+## FREE Option: Run on Your Own iPhone (No $99 Required!)
 
-Expo Go does **NOT** support push notifications (as of SDK 53). To get real push notifications when the app is in the background, you need to create a **development build** or **production build**.
+You can run this app on your personal iPhone **for free** using Xcode with a free Apple ID. 
 
-## Prerequisites
+### Requirements:
+- **Mac computer** with Xcode installed
+- **iPhone** connected via USB cable
+- **Free Apple ID** (any iCloud account works)
 
-1. **Apple Developer Account** ($99/year) - Required for push notifications
-2. **macOS computer** - Required for iOS builds
-3. **Xcode** installed from the Mac App Store
-4. **EAS CLI** installed globally:
-   ```bash
-   npm install -g eas-cli
-   ```
-
-## Step-by-Step Guide
-
-### 1. Login to EAS
+### Steps:
 
 ```bash
+# 1. Navigate to frontend folder
 cd /app/frontend
-eas login
-```
 
-### 2. Configure EAS Build
-
-Create or update `eas.json`:
-
-```json
-{
-  "cli": {
-    "version": ">= 5.0.0"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "ios": {
-        "simulator": false
-      }
-    },
-    "preview": {
-      "distribution": "internal",
-      "ios": {
-        "simulator": false
-      }
-    },
-    "production": {}
-  },
-  "submit": {
-    "production": {}
-  }
-}
-```
-
-### 3. Configure Push Notifications
-
-The app.json already has the necessary configuration:
-
-```json
-{
-  "expo": {
-    "ios": {
-      "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
-      }
-    },
-    "plugins": [
-      ["expo-notifications", {
-        "sounds": [],
-        "icon": "./assets/images/icon.png",
-        "color": "#667eea"
-      }]
-    ]
-  }
-}
-```
-
-### 4. Build for iOS Device
-
-```bash
-# Create a development build for iOS device
-eas build --platform ios --profile development
-
-# Or create a preview build for internal testing
-eas build --platform ios --profile preview
-```
-
-### 5. Install on Your Device
-
-After the build completes:
-
-1. **Development Build**: Download and install via QR code from the EAS dashboard
-2. **Preview Build**: Use TestFlight for internal distribution
-
-### 6. Configure Push Credentials
-
-When building, EAS will ask for push notification credentials:
-- Select **"Let EAS handle it"** to automatically create Apple Push Notification keys
-
-## Alternative: Local Development Build
-
-If you have a Mac with Xcode:
-
-```bash
-# Generate native iOS project
+# 2. Generate native iOS project
 npx expo prebuild --platform ios
 
-# Open in Xcode
-open ios/*.xcworkspace
+# 3. Install iOS dependencies
+cd ios && pod install && cd ..
 
-# Build and run on your connected device from Xcode
+# 4. Open in Xcode
+open ios/frontend.xcworkspace
 ```
+
+### In Xcode:
+
+1. **Select your iPhone** from the device dropdown (top left)
+2. Go to **Signing & Capabilities** tab
+3. Click **Team** dropdown → **Add an Account** → Sign in with your Apple ID
+4. Select **Personal Team** (your Apple ID)
+5. Change **Bundle Identifier** to something unique: `com.yourname.courtwatch`
+6. Click **Play button** (▶️) to build and install
+
+### Limitations of Free Signing:
+- ⚠️ App expires after **7 days** - just rebuild to reinstall
+- ⚠️ Can only install on **3 devices** max
+- ⚠️ **Push notifications** (when app is in background) require paid account
+- ✅ **In-app notifications** work fine!
+
+---
+
+## Paid Option: Full Push Notifications ($99/year)
 
 ## Testing Push Notifications
 

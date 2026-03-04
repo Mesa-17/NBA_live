@@ -289,25 +289,29 @@ export default function GamesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header Gradient */}
+      {/* Hero Header */}
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.headerGradient}
+        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        style={styles.heroGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView edges={['top']}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>NBA Live</Text>
-              <Text style={styles.headerSubtitle}>Real-time scores & player tracking</Text>
-            </View>
-            <View style={styles.headerActions}>
+          <View style={styles.heroContent}>
+            {/* Top Bar */}
+            <View style={styles.topBar}>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoEmoji}>🏀</Text>
+                <View>
+                  <Text style={styles.logoText}>CourtWatch</Text>
+                  <Text style={styles.logoTagline}>Live NBA Tracker</Text>
+                </View>
+              </View>
               <TouchableOpacity 
                 style={styles.trackingButton}
                 onPress={() => router.push('/tracked')}
               >
-                <Ionicons name="star" size={20} color="#fff" />
+                <Ionicons name="star" size={22} color="#fbbf24" />
                 {trackedPlayers.length > 0 && (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{trackedPlayers.length}</Text>
@@ -315,20 +319,35 @@ export default function GamesScreen() {
                 )}
               </TouchableOpacity>
             </View>
+
+            {/* Stats Row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{filteredGames.filter(g => g.is_live || g.status?.includes('Q') || g.status?.includes('Half')).length}</Text>
+                <Text style={styles.statLabel}>Live Now</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{filteredGames.length}</Text>
+                <Text style={styles.statLabel}>Games Today</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{trackedPlayers.length}</Text>
+                <Text style={styles.statLabel}>Tracking</Text>
+              </View>
+            </View>
+
+            {/* Connection Status */}
+            <View style={styles.connectionPill}>
+              <View style={[styles.connectionDot, connected ? styles.connectedDot : styles.disconnectedDot]} />
+              <Text style={styles.connectionPillText}>
+                {connected ? 'Real-time updates active' : 'Connecting...'}
+              </Text>
+            </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
-
-      {/* Connection Status */}
-      <View style={[styles.connectionBar, connected ? styles.connectedBar : styles.disconnectedBar]}>
-        <View style={styles.connectionContent}>
-          <View style={[styles.connectionDot, connected ? styles.connectedDot : styles.disconnectedDot]} />
-          <Text style={styles.connectionText}>
-            {connected ? 'Live updates active' : 'Connecting...'}
-          </Text>
-        </View>
-        <Text style={styles.refreshText}>Auto-refresh: 5s</Text>
-      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -438,39 +457,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f1f5f9',
   },
-  headerGradient: {
+  heroGradient: {
     paddingBottom: 20,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  heroContent: {
     paddingHorizontal: 20,
     paddingTop: 10,
   },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: -1,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  headerActions: {
+  logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+  },
+  logoEmoji: {
+    fontSize: 32,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.5,
+  },
+  logoTagline: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: -2,
   },
   trackingButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   badge: {
     position: 'absolute',
@@ -483,50 +510,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#667eea',
+    borderColor: '#1a1a2e',
   },
   badgeText: {
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
   },
-  connectionBar: {
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: 8,
+  },
+  connectionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  connectedBar: {
-    backgroundColor: '#dcfce7',
-  },
-  disconnectedBar: {
-    backgroundColor: '#fef3c7',
-  },
-  connectionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
     gap: 8,
   },
-  connectionDot: {
+  connectionPillText: {
+    color: '#22c55e',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  connectedDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  connectedDot: {
     backgroundColor: '#22c55e',
   },
   disconnectedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#f59e0b',
-  },
-  connectionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  refreshText: {
-    fontSize: 12,
-    color: '#64748b',
   },
   scrollView: {
     flex: 1,
