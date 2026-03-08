@@ -304,14 +304,21 @@ async def background_nba_data():
         try:
             games = get_today_games()
             await sio.emit('games_update', {'games': games})
-            print(f"📤 Emitted {len(games)} games")
+            
+            # Only count live games
+            live_games = [g for g in games if g.get('is_live')]
+            print(f"📤 Emitted {len(games)} games ({len(live_games)} live)")
 
-            for game in games:
+            # Only process LIVE games for real-time updates
+            for game in live_games:
                 game_id = game['game_id']
                 events, actions = get_game_events(game_id)
                 players, team_map, player_stats = get_players_in_game(game_id)
+                
+                if not actions:
+                    continue
 
-                # Emit game data
+                # Emit game data for live games
                 await sio.emit('game_data', {
                     'game_id': game_id,
                     'events': events[:30],
@@ -326,95 +333,100 @@ async def background_nba_data():
                 })
 
                 last_action_id = last_action_tracker.get(game_id, 0)
+                current_last_action = actions[-1].get('actionNumber', 0)
+                
+                # If first time seeing this game, just store the last action ID
+                if last_action_id == 0:
+                    last_action_tracker[game_id] = current_last_action
+                    print(f"🎮 Started tracking {game['away_team']} vs {game['home_team']} from action #{current_last_action}")
+                    continue
 
-                if actions:
-                    current_last_action = actions[-1].get('actionNumber', 0)
+                if current_last_action > last_action_id:
+                    new_actions = [a for a in actions if a.get('actionNumber', 0) > last_action_id]
+                    print(f"🆕 {len(new_actions)} new actions for {game['away_team']} vs {game['home_team']}")
 
-                    if last_action_id > 0 and current_last_action > last_action_id:
-                        new_actions = [a for a in actions if a.get('actionNumber', 0) > last_action_id]
+                    for action in new_actions:
+                        desc = action.get("description", "")
+                        period = action.get("period", "")
+                        clock = format_clock(action.get("clock", ""))
+                        action_number = action.get("actionNumber", 0)
 
-                        for action in new_actions:
-                            desc = action.get("description", "")
-                            period = action.get("period", "")
-                            clock = format_clock(action.get("clock", ""))
-                            action_number = action.get("actionNumber", 0)
+                        # Extract player name
+                        abbr_player_name = None
+                        full_player_name = None
 
-                            # Extract player name
-                            abbr_player_name = None
-                            full_player_name = None
+                        if re.search(r"SUB\s+(?:in|out):", desc, re.IGNORECASE):
+                            sub_match = re.search(r"SUB\s+(?:in|out):\s+([A-Z]\.\s+[A-Za-z\s\-'\.]+)", desc, re.IGNORECASE)
+                            if sub_match:
+                                abbr_player_name = sub_match.group(1).strip()
+                        else:
+                            player_match = re.match(r"([A-Z]\.\s+[A-Za-z\s\-'\.]+?)(?:\s)", desc)
+                            abbr_player_name = player_match.group(1).strip() if player_match else None
 
-                            if re.search(r"SUB\s+(?:in|out):", desc, re.IGNORECASE):
-                                sub_match = re.search(r"SUB\s+(?:in|out):\s+([A-Z]\.\s+[A-Za-z\s\-'\.]+)", desc, re.IGNORECASE)
-                                if sub_match:
-                                    abbr_player_name = sub_match.group(1).strip()
-                            else:
-                                player_match = re.match(r"([A-Z]\.\s+[A-Za-z\s\-'\.]+?)(?:\s)", desc)
-                                abbr_player_name = player_match.group(1).strip() if player_match else None
+                        if abbr_player_name:
+                            abbr_parts = abbr_player_name.split()
+                            if len(abbr_parts) >= 2:
+                                abbr_last_name = ' '.join(abbr_parts[1:])
+                                for player in players:
+                                    if abbr_last_name in player:
+                                        full_player_name = player
+                                        break
 
-                            if abbr_player_name:
-                                abbr_parts = abbr_player_name.split()
-                                if len(abbr_parts) >= 2:
-                                    abbr_last_name = ' '.join(abbr_parts[1:])
-                                    for player in players:
-                                        if abbr_last_name in player:
-                                            full_player_name = player
-                                            break
+                        if full_player_name:
+                            await sio.emit('player_action', {
+                                'game_id': game_id,
+                                'description': desc,
+                                'period': period,
+                                'clock': clock,
+                                'action_id': action_number,
+                                'player_name': full_player_name,
+                                'abbr_name': abbr_player_name
+                            })
 
-                            if full_player_name:
-                                await sio.emit('player_action', {
+                        pts_match = re.search(r"\((\d+)\s*PTS?\)", desc, re.IGNORECASE)
+                        if pts_match and full_player_name:
+                            total_points = int(pts_match.group(1))
+                            # Get current game score
+                            score_home = action.get("scoreHome", "0")
+                            score_away = action.get("scoreAway", "0")
+                            
+                            await sio.emit('new_score', {
+                                'game_id': game_id,
+                                'description': desc,
+                                'period': period,
+                                'clock': clock,
+                                'action_id': action_number,
+                                'total_points': total_points,
+                                'player_name': full_player_name,
+                                'abbr_name': abbr_player_name,
+                                'score_home': score_home,
+                                'score_away': score_away,
+                                'home_team': game['home_team'],
+                                'away_team': game['away_team']
+                            })
+                            print(f"🏀 NEW SCORE: {full_player_name} now has {total_points} PTS - {desc}")
+
+                        # Check for substitution events and emit them
+                        desc_upper = desc.upper()
+                        if full_player_name and ('SUB ' in desc_upper):
+                            sub_status = None
+                            if 'SUB IN:' in desc_upper or 'ENTERS' in desc_upper:
+                                sub_status = 'IN'
+                            elif 'SUB OUT:' in desc_upper or 'GOES TO BENCH' in desc_upper:
+                                sub_status = 'OUT'
+                            
+                            if sub_status:
+                                await sio.emit('player_substitution', {
                                     'game_id': game_id,
-                                    'description': desc,
+                                    'player_name': full_player_name,
+                                    'sub_status': sub_status,
                                     'period': period,
                                     'clock': clock,
                                     'action_id': action_number,
-                                    'player_name': full_player_name,
-                                    'abbr_name': abbr_player_name
-                                })
-
-                            pts_match = re.search(r"\((\d+)\s*PTS?\)", desc, re.IGNORECASE)
-                            if pts_match and full_player_name:
-                                total_points = int(pts_match.group(1))
-                                # Get current game score
-                                score_home = action.get("scoreHome", "0")
-                                score_away = action.get("scoreAway", "0")
-                                
-                                await sio.emit('new_score', {
-                                    'game_id': game_id,
-                                    'description': desc,
-                                    'period': period,
-                                    'clock': clock,
-                                    'action_id': action_number,
-                                    'total_points': total_points,
-                                    'player_name': full_player_name,
-                                    'abbr_name': abbr_player_name,
-                                    'score_home': score_home,
-                                    'score_away': score_away,
                                     'home_team': game['home_team'],
                                     'away_team': game['away_team']
                                 })
-                                print(f"🏀 NEW SCORE: {full_player_name} now has {total_points} PTS - {desc}")
-
-                            # Check for substitution events and emit them
-                            desc_upper = desc.upper()
-                            if full_player_name and ('SUB ' in desc_upper):
-                                sub_status = None
-                                if 'SUB IN:' in desc_upper or 'ENTERS' in desc_upper:
-                                    sub_status = 'IN'
-                                elif 'SUB OUT:' in desc_upper or 'GOES TO BENCH' in desc_upper:
-                                    sub_status = 'OUT'
-                                
-                                if sub_status:
-                                    await sio.emit('player_substitution', {
-                                        'game_id': game_id,
-                                        'player_name': full_player_name,
-                                        'sub_status': sub_status,
-                                        'period': period,
-                                        'clock': clock,
-                                        'action_id': action_number,
-                                        'home_team': game['home_team'],
-                                        'away_team': game['away_team']
-                                    })
-                                    print(f"🔄 SUBSTITUTION: {full_player_name} {sub_status}")
+                                print(f"🔄 SUBSTITUTION: {full_player_name} {sub_status}")
 
                     last_action_tracker[game_id] = current_last_action
 
