@@ -21,7 +21,7 @@ import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 import { useTrackerStore } from './store/trackerStore';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://nba-live-tracker-1.preview.emergentagent.com';
 
 // Helper to format date for display - "Today" for current day, date for others
 const formatDateLabel = (dateStr: string) => {

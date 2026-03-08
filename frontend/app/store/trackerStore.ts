@@ -18,6 +18,7 @@ interface TrackerStore {
   playerStats: { [key: string]: PlayerStats };
   playerSubStatus: { [key: string]: 'in' | 'out' };
   notifiedActions: Set<string>;
+  notifiedSubstitutions: Set<string>;
   pushToken: string | null;
   
   setConnected: (connected: boolean) => void;
@@ -28,8 +29,10 @@ interface TrackerStore {
   removeTrackedPlayer: (player: string) => void;
   updatePlayerStats: (player: string, stats: Partial<PlayerStats>) => void;
   updatePlayerSubStatus: (player: string, status: 'in' | 'out') => void;
+  syncTrackedPlayerStats: (apiPlayerStats: { [key: string]: any }) => void;
   handleNewScore: (data: any) => void;
   handlePlayerAction: (data: any) => void;
+  handleSubstitution: (data: any) => void;
   setPushToken: (token: string) => void;
   isPlayerTracked: (player: string) => boolean;
 }
@@ -80,6 +83,7 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
   playerStats: {},
   playerSubStatus: {},
   notifiedActions: new Set(),
+  notifiedSubstitutions: new Set(),
   pushToken: null,
 
   setConnected: (connected) => set({ connected }),
@@ -145,6 +149,38 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     set((state) => ({
       playerSubStatus: { ...state.playerSubStatus, [player]: status },
     }));
+  },
+  
+  // Sync tracked player stats with latest API data
+  syncTrackedPlayerStats: (apiPlayerStats: { [key: string]: any }) => {
+    const state = get();
+    const updates: { [key: string]: any } = {};
+    
+    state.trackedPlayers.forEach(player => {
+      if (apiPlayerStats[player]) {
+        const apiStats = apiPlayerStats[player];
+        const currentStats = state.playerStats[player];
+        
+        // Only update if API has newer/different data
+        if (!currentStats || 
+            apiStats.pts !== currentStats.pts || 
+            apiStats.reb !== currentStats.reb || 
+            apiStats.ast !== currentStats.ast) {
+          updates[player] = {
+            pts: apiStats.pts || 0,
+            reb: apiStats.reb || 0,
+            ast: apiStats.ast || 0,
+          };
+          console.log(`🔄 Synced ${player} stats: ${apiStats.pts} PTS`);
+        }
+      }
+    });
+    
+    if (Object.keys(updates).length > 0) {
+      set((s) => ({
+        playerStats: { ...s.playerStats, ...updates },
+      }));
+    }
   },
   
   handleNewScore: (data) => {
@@ -309,6 +345,68 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
         }));
       }
     });
+  },
+  
+  handleSubstitution: (data) => {
+    const state = get();
+    const playerName = data.player_name;
+    const subStatus = data.sub_status; // 'IN' or 'OUT'
+    const period = data.period || 1;
+    const clock = data.clock || '00:00';
+    
+    console.log(`🔄 handleSubstitution: ${playerName} ${subStatus}`);
+    console.log(`📊 Tracked players: [${state.trackedPlayers.join(', ')}]`);
+    
+    if (!playerName) {
+      console.log('❌ No player name, skipping');
+      return;
+    }
+    
+    // Update sub status for this player
+    const newStatus = subStatus === 'IN' ? 'in' : 'out';
+    set((s) => ({
+      playerSubStatus: { ...s.playerSubStatus, [playerName]: newStatus },
+    }));
+    
+    // Only send notification if player is tracked
+    if (!state.trackedPlayers.includes(playerName)) {
+      console.log(`❌ ${playerName} is not tracked, skipping notification`);
+      return;
+    }
+    
+    const subId = `${data.game_id}_${data.action_id}_sub`;
+    if (state.notifiedSubstitutions.has(subId)) {
+      console.log(`❌ Substitution ${subId} already notified, skipping`);
+      return;
+    }
+    
+    console.log(`✅ ${playerName} IS tracked! Sending substitution notification...`);
+    
+    // Format notification
+    const periodStr = period > 4 ? `OT${period - 4}` : `Q${period}`;
+    const emoji = subStatus === 'IN' ? '🟢' : '🔴';
+    const action = subStatus === 'IN' ? 'entered the game' : 'went to the bench';
+    
+    const title = `${emoji} ${playerName}`;
+    const body = `${action} | ${periodStr} - ${clock}`;
+    
+    // Show in-app toast
+    Toast.show({
+      type: subStatus === 'IN' ? 'success' : 'info',
+      text1: title,
+      text2: body,
+      position: 'top',
+      visibilityTime: 3000,
+      topOffset: 60,
+    });
+    
+    // Send push notification
+    sendPushNotification(title, body);
+    
+    // Mark as notified
+    set((s) => ({
+      notifiedSubstitutions: new Set([...s.notifiedSubstitutions, subId]),
+    }));
   },
     
   setPushToken: (token) => set({ pushToken: token }),

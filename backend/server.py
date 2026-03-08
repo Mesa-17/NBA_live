@@ -394,6 +394,28 @@ async def background_nba_data():
                                 })
                                 print(f"🏀 NEW SCORE: {full_player_name} now has {total_points} PTS - {desc}")
 
+                            # Check for substitution events and emit them
+                            desc_upper = desc.upper()
+                            if full_player_name and ('SUB ' in desc_upper):
+                                sub_status = None
+                                if 'SUB IN:' in desc_upper or 'ENTERS' in desc_upper:
+                                    sub_status = 'IN'
+                                elif 'SUB OUT:' in desc_upper or 'GOES TO BENCH' in desc_upper:
+                                    sub_status = 'OUT'
+                                
+                                if sub_status:
+                                    await sio.emit('player_substitution', {
+                                        'game_id': game_id,
+                                        'player_name': full_player_name,
+                                        'sub_status': sub_status,
+                                        'period': period,
+                                        'clock': clock,
+                                        'action_id': action_number,
+                                        'home_team': game['home_team'],
+                                        'away_team': game['away_team']
+                                    })
+                                    print(f"🔄 SUBSTITUTION: {full_player_name} {sub_status}")
+
                     last_action_tracker[game_id] = current_last_action
 
         except Exception as e:

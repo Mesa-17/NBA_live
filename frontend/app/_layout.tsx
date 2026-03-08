@@ -10,12 +10,12 @@ import { useTrackerStore } from './store/trackerStore';
 
 const queryClient = new QueryClient();
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://nba-live-tracker-1.preview.emergentagent.com';
 
 function AppContent() {
   const socketRef = useRef<Socket | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const { setConnected, handleNewScore, handlePlayerAction, setGames } = useTrackerStore();
+  const { setConnected, handleNewScore, handlePlayerAction, handleSubstitution, setGames } = useTrackerStore();
 
   // Function to connect socket
   const connectSocket = () => {
@@ -60,6 +60,14 @@ function AppContent() {
 
     socket.on('player_action', (data) => {
       handlePlayerAction(data);
+    });
+
+    socket.on('player_substitution', (data) => {
+      // Get fresh state to check tracked players
+      const currentState = useTrackerStore.getState();
+      console.log('🔄 Substitution event:', data.player_name, data.sub_status);
+      console.log('🎯 Tracked players:', currentState.trackedPlayers);
+      handleSubstitution(data);
     });
 
     socket.on('games_update', (data) => {

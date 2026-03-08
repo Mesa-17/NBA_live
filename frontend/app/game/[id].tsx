@@ -17,7 +17,7 @@ import { useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useTrackerStore } from '../store/trackerStore';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://court-watch.preview.emergentagent.com';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://nba-live-tracker-1.preview.emergentagent.com';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -233,24 +233,27 @@ export default function GameDetailScreen() {
             <Text style={styles.playerName}>{player}</Text>
             {/* Always show stats from API, highlighted if tracked */}
             {apiStats && (
-              <View style={[styles.playerStatsRow, isTracked && styles.playerStatsRowTracked]}>
-                <View style={styles.miniStat}>
-                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
-                    {stats?.pts || apiStats.pts || 0}
-                  </Text>
-                  <Text style={styles.miniStatLabel}>PTS</Text>
-                </View>
-                <View style={styles.miniStat}>
-                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
-                    {stats?.reb || apiStats.reb || 0}
-                  </Text>
-                  <Text style={styles.miniStatLabel}>REB</Text>
-                </View>
-                <View style={styles.miniStat}>
-                  <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
-                    {stats?.ast || apiStats.ast || 0}
-                  </Text>
-                  <Text style={styles.miniStatLabel}>AST</Text>
+              <View style={styles.playerStatsRow}>
+                {/* Wrap stats in a tight container that only expands to fit content */}
+                <View style={[styles.statsContainer, isTracked && styles.statsContainerTracked]}>
+                  <View style={styles.miniStat}>
+                    <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                      {stats?.pts || apiStats.pts || 0}
+                    </Text>
+                    <Text style={styles.miniStatLabel}>PTS</Text>
+                  </View>
+                  <View style={styles.miniStat}>
+                    <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                      {stats?.reb || apiStats.reb || 0}
+                    </Text>
+                    <Text style={styles.miniStatLabel}>REB</Text>
+                  </View>
+                  <View style={styles.miniStat}>
+                    <Text style={[styles.miniStatValue, isTracked && styles.miniStatValueTracked]}>
+                      {stats?.ast || apiStats.ast || 0}
+                    </Text>
+                    <Text style={styles.miniStatLabel}>AST</Text>
+                  </View>
                 </View>
               </View>
             )}
@@ -595,14 +598,16 @@ const styles = StyleSheet.create({
   playerStatsRow: {
     flexDirection: 'row',
     marginTop: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
     gap: 16,
   },
-  playerStatsRowTracked: {
+  statsContainerTracked: {
     backgroundColor: '#f0f4ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    marginTop: 8,
   },
   miniStat: {
     alignItems: 'center',
