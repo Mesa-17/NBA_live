@@ -384,11 +384,11 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     
     // Format notification
     const periodStr = period > 4 ? `OT${period - 4}` : `Q${period}`;
-    const emoji = subStatus === 'IN' ? '🟢' : '🔴';
-    const action = subStatus === 'IN' ? 'entered the game' : 'went to the bench';
+    const emoji = subStatus === 'IN' ? '⬆️' : '⬇️';
+    const action = subStatus === 'IN' ? 'on court!' : 'substituted out!';
     
-    const title = `${emoji} ${playerName}`;
-    const body = `${action} | ${periodStr} - ${clock}`;
+    const title = `${emoji} ${playerName} ${action}`;
+    const body = `${periodStr} - ${clock}`;
     
     // Show in-app toast
     Toast.show({
