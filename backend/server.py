@@ -356,11 +356,13 @@ async def background_nba_data():
                         full_player_name = None
 
                         if re.search(r"SUB\s+(?:in|out):", desc, re.IGNORECASE):
-                            sub_match = re.search(r"SUB\s+(?:in|out):\s+([A-Z]\.\s+[A-Za-z\s\-'\.]+)", desc, re.IGNORECASE)
+                            sub_match = re.search(r"SUB\s+(?:in|out):\s+([A-Z]\.\s+[^\s\d']+(?:\s+(?:Jr\.|Sr\.|III|II|IV))?)", desc, re.IGNORECASE | re.UNICODE)
                             if sub_match:
                                 abbr_player_name = sub_match.group(1).strip()
                         else:
-                            player_match = re.match(r"([A-Z]\.\s+[A-Za-z\s\-'\.]+?)(?:\s)", desc)
+                            # Match player names with unicode chars (Dončić, Mañon, etc.)
+                            # Pattern: "L. LastName" - stops at digits, apostrophes, or action words
+                            player_match = re.match(r"(?:MISS\s+)?([A-Z]\.\s+[^\s\d']+(?:\s+(?:Jr\.|Sr\.|III|II|IV))?)", desc, re.UNICODE)
                             abbr_player_name = player_match.group(1).strip() if player_match else None
 
                         if abbr_player_name:
