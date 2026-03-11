@@ -38,15 +38,17 @@ export default function GameDetailScreen() {
 
   const currentGameData = gameData[id || ''] || gameInfo;
 
-  const calculateInitialStats = (player: string, events: any[]) => {
+  const calculateInitialStats = (player: string, events: any[], isGameStarted: boolean) => {
     const lastNameParts = player.split(' ').slice(1);
     const lastName = lastNameParts.join(' ');
     
     let abbrName: string | null = null;
     let pts = 0, reb = 0, ast = 0;
-    let subStatus: 'in' | 'out' = 'in';
-    let subStatusFound = false;
+    // Default: 'bench' if game started but no sub events, 'not_started' if game not started
+    let subStatus: 'in' | 'out' | 'bench' | 'not_started' = isGameStarted ? 'bench' : 'not_started';
+    let lastSubEventIndex = -1;
 
+    // First pass: find abbreviated name and stats
     for (const event of events) {
       const desc = event.description || '';
       
@@ -67,16 +69,30 @@ export default function GameDetailScreen() {
         const astMatch = desc.match(astPattern);
         if (astMatch) ast = Math.max(ast, parseInt(astMatch[1]));
       }
+    }
+
+    // Second pass: find the MOST RECENT (last) substitution event
+    // Events are in reverse chronological order (newest first), so we find the first sub event
+    for (let i = 0; i < events.length; i++) {
+      const desc = (events[i].description || '').toUpperCase();
+      const playerInEvent = desc.includes(player.toUpperCase()) || (abbrName && desc.includes(abbrName.toUpperCase()));
       
-      if (!subStatusFound && (desc.includes(player) || (abbrName && desc.includes(abbrName)))) {
-        if (desc.toUpperCase().includes('SUB IN') || desc.toUpperCase().includes('ENTERS')) {
+      if (playerInEvent) {
+        if (desc.includes('SUB IN:') || desc.includes('ENTERS')) {
           subStatus = 'in';
-          subStatusFound = true;
-        } else if (desc.toUpperCase().includes('SUB OUT') || desc.toUpperCase().includes('GOES TO BENCH')) {
+          lastSubEventIndex = i;
+          break; // Found most recent sub event
+        } else if (desc.includes('SUB OUT:') || desc.includes('GOES TO BENCH')) {
           subStatus = 'out';
-          subStatusFound = true;
+          lastSubEventIndex = i;
+          break; // Found most recent sub event
         }
       }
+    }
+
+    // If player has scored points but no sub events found, they're likely in the game
+    if (lastSubEventIndex === -1 && pts > 0) {
+      subStatus = 'in';
     }
     
     return { stats: { pts, reb, ast }, subStatus };
@@ -131,7 +147,12 @@ export default function GameDetailScreen() {
     } else {
       // Use API stats if available, otherwise calculate from events
       let stats = { pts: 0, reb: 0, ast: 0 };
-      let subStatus: 'in' | 'out' = 'in';
+      let subStatus: 'in' | 'out' | 'bench' | 'not_started' = 'bench';
+      
+      // Check if game has started (has events)
+      const events = currentGameData?.all_events || currentGameData?.events || [];
+      const isGameStarted = events.length > 0;
+      const isScheduled = currentGameData?.is_scheduled === true;
       
       if (apiStats) {
         stats = { 
@@ -139,18 +160,33 @@ export default function GameDetailScreen() {
           reb: apiStats.reb || 0, 
           ast: apiStats.ast || 0 
         };
+        // Calculate sub status from events even if we have API stats
+        const calculated = calculateInitialStats(player, events, isGameStarted && !isScheduled);
+        subStatus = calculated.subStatus;
       } else {
-        const events = currentGameData?.all_events || currentGameData?.events || [];
-        const calculated = calculateInitialStats(player, events);
+        const calculated = calculateInitialStats(player, events, isGameStarted && !isScheduled);
         stats = calculated.stats;
         subStatus = calculated.subStatus;
       }
       
       addTrackedPlayer(player, stats, subStatus);
+      
+      // Show appropriate toast based on status
+      let statusText = '';
+      if (subStatus === 'in') {
+        statusText = '🟢 Currently on court';
+      } else if (subStatus === 'out') {
+        statusText = '🔴 Currently benched';
+      } else if (subStatus === 'not_started') {
+        statusText = '⏳ Game not started';
+      } else {
+        statusText = '🪑 On bench';
+      }
+      
       Toast.show({
         type: 'success',
         text1: '🔔 Player Tracked!',
-        text2: `You'll get notifications when ${player} scores`,
+        text2: `${player} | ${statusText}`,
         position: 'top',
         visibilityTime: 2000,
       });

@@ -16,7 +16,7 @@ interface TrackerStore {
   gameData: { [key: string]: any };
   trackedPlayers: string[];
   playerStats: { [key: string]: PlayerStats };
-  playerSubStatus: { [key: string]: 'in' | 'out' };
+  playerSubStatus: { [key: string]: 'in' | 'out' | 'bench' | 'not_started' };
   notifiedActions: Set<string>;
   notifiedSubstitutions: Set<string>;
   pushToken: string | null;
@@ -25,10 +25,10 @@ interface TrackerStore {
   setGames: (games: any[]) => void;
   setSelectedGameId: (id: string | null) => void;
   setGameData: (gameId: string, data: any) => void;
-  addTrackedPlayer: (player: string, initialStats?: PlayerStats, subStatus?: 'in' | 'out') => void;
+  addTrackedPlayer: (player: string, initialStats?: PlayerStats, subStatus?: 'in' | 'out' | 'bench' | 'not_started') => void;
   removeTrackedPlayer: (player: string) => void;
   updatePlayerStats: (player: string, stats: Partial<PlayerStats>) => void;
-  updatePlayerSubStatus: (player: string, status: 'in' | 'out') => void;
+  updatePlayerSubStatus: (player: string, status: 'in' | 'out' | 'bench' | 'not_started') => void;
   syncTrackedPlayerStats: (apiPlayerStats: { [key: string]: any }) => void;
   handleNewScore: (data: any) => void;
   handlePlayerAction: (data: any) => void;
@@ -96,21 +96,12 @@ export const useTrackerStore = create<TrackerStore>((set, get) => ({
     gameData: { ...state.gameData, [gameId]: data }
   })),
   
-  addTrackedPlayer: (player, initialStats = { pts: 0, reb: 0, ast: 0 }, subStatus = 'in') => {
+  addTrackedPlayer: (player, initialStats = { pts: 0, reb: 0, ast: 0 }, subStatus = 'bench') => {
     set((state) => {
       if (state.trackedPlayers.includes(player)) return state;
       
-      console.log(`🔔 Adding tracked player: ${player}`);
+      console.log(`🔔 Adding tracked player: ${player} (status: ${subStatus})`);
       
-      // Show toast notification
-      Toast.show({
-        type: 'success',
-        text1: '🔔 Player Tracked!',
-        text2: `You'll get notifications when ${player} scores`,
-        position: 'top',
-        visibilityTime: 3000,
-        topOffset: 60,
-      });
       return {
         trackedPlayers: [...state.trackedPlayers, player],
         playerStats: { ...state.playerStats, [player]: initialStats },
