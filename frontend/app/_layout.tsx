@@ -71,8 +71,33 @@ function AppContent() {
     });
 
     socket.on('games_update', (data) => {
+      // Only update scores for existing games, don't replace the whole list
+      // This preserves future dates that were fetched via REST API
       if (data.games) {
-        setGames(data.games);
+        const currentState = useTrackerStore.getState();
+        const currentGames = currentState.games;
+        
+        // Create a map of updated games by ID
+        const updatedGamesMap = new Map(data.games.map((g: any) => [g.game_id, g]));
+        
+        // Merge: update existing games' scores, keep games not in the update
+        const mergedGames = currentGames.map((game: any) => {
+          const updated = updatedGamesMap.get(game.game_id);
+          if (updated) {
+            // Update score and status for this game
+            return { ...game, ...updated };
+          }
+          return game;
+        });
+        
+        // Add any new games from today that might not be in current list
+        data.games.forEach((game: any) => {
+          if (!currentGames.find((g: any) => g.game_id === game.game_id)) {
+            mergedGames.push(game);
+          }
+        });
+        
+        setGames(mergedGames);
       }
     });
   };
